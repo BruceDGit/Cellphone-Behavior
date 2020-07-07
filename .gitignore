@@ -1,0 +1,8 @@
+dataset/
+.idea/
+__pycache__
+.git/
+models/
+.ipynb_checkpoints/
+data/
+result/
