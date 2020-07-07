@@ -52,10 +52,10 @@ kfold = StratifiedKFold(5, shuffle=True)
 
 def Net(normalization='bn'):
     input = Input(shape=(60, 8, 1))
-    X = Conv2D(filters=64,
-               kernel_size=(3, 3),
+    X = TimeDistributed(Conv1D(filters=64,
+               kernel_size=3,
                activation='relu',
-               padding='same')(input)
+               padding='same'))(input)
     if normalization == 'bn':
         X = BatchNormalization()(X)
     elif normalization == 'gn':
@@ -69,10 +69,10 @@ def Net(normalization='bn'):
         X = LayerNormalization(center=True, scale=True)(X)
 
 
-    X = Conv2D(filters=128,
-               kernel_size=(3, 3),
+    X = TimeDistributed(Conv1D(filters=128,
+               kernel_size=3,
                activation='relu',
-               padding='same')(X)
+               padding='same'))(X)
     if normalization == 'bn':
         X = BatchNormalization()(X)
     elif normalization == 'gn':
@@ -87,10 +87,10 @@ def Net(normalization='bn'):
 
     X = MaxPooling2D()(X)
     X = Dropout(0.2)(X)
-    X = Conv2D(filters=256,
-               kernel_size=(3, 3),
+    X = TimeDistributed(Conv1D(filters=256,
+               kernel_size=3,
                activation='relu',
-               padding='same')(X)
+               padding='same'))(X)
     if normalization == 'bn':
         X = BatchNormalization()(X)
     elif normalization == 'gn':
@@ -104,10 +104,10 @@ def Net(normalization='bn'):
         X = LayerNormalization(center=True, scale=True)(X)
 
     X = Dropout(0.3)(X)
-    X = Conv2D(filters=512,
-               kernel_size=(3, 3),
+    X = TimeDistributed(Conv1D(filters=512,
+               kernel_size=3,
                activation='relu',
-               padding='same')(X)
+               padding='same'))(X)
     if normalization == 'bn':
         X = BatchNormalization()(X)
     elif normalization == 'gn':
@@ -162,4 +162,4 @@ for fold, (xx, yy) in enumerate(kfold.split(x, y)):
     proba_t += model.predict(t, verbose=0, batch_size=1024) / 5.
 
 sub.behavior_id = np.argmax(proba_t, axis=1)
-sub.to_csv('ln.csv', index=False)
+sub.to_csv('cnn_lstm.csv', index=False)
