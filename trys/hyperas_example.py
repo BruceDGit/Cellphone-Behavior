@@ -15,7 +15,7 @@ from sklearn.model_selection import train_test_split
 
 
 def data():
-    train = pd.read_csv('data/sensor_train.csv')
+    train = pd.read_csv('../data/sensor_train.csv')
 
     y = train.groupby('fragment_id')['behavior_id'].min()
 

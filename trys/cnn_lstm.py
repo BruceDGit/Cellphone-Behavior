@@ -22,13 +22,13 @@ import tensorflow_addons as tfa
 from tensorflow.keras.layers import add, Flatten
 from tensorflow_addons.layers import *
 
-train = pd.read_csv('data/sensor_train.csv')
-test = pd.read_csv('data/sensor_test.csv')
+train = pd.read_csv('../data/sensor_train.csv')
+test = pd.read_csv('../data/sensor_test.csv')
 train_size = len(train)
 
 data = pd.concat([train, test], sort=False)
 
-sub = pd.read_csv('data/提交结果示例.csv')
+sub = pd.read_csv('../data/提交结果示例.csv')
 y = train.groupby('fragment_id')['behavior_id'].min()
 
 train['mod'] = (train.acc_x ** 2 + train.acc_y ** 2 + train.acc_z ** 2) ** .5

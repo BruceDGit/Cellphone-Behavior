@@ -145,3 +145,14 @@ Epoch 00138: early stopping
 accuracy_score 0.766803840877915 acc_combo 0.800509504213206
 ```
 `线上0.758`
+
+- X = GlobalMaxPooling2D()(X)
+```text
+Epoch 119/500
+23/23 - 1s - loss: 0.1941 - acc: 0.9311 - val_loss: 0.9021 - val_acc: 0.7359 - lr: 6.2500e-05
+Epoch 00119: early stopping
+accuracy_score 0.7414266117969822 acc_combo 0.7816317199033243
+5kflod mean acc score:0.728880483560249
+5kflod mean combo score:0.7694991110919478
+```
+`线上 0.7402857142857142`
