@@ -112,15 +112,14 @@ def Net():
     # X = AveragePooling2D(pool_size=(10, 1))(X)
     # X = BatchNormalization()(Dropout(0.2)(Dense(128, activation='relu')(Flatten()(X))))
     # X =SpatialPyramidPooling([1, 2, 4])(X)
-
     X = GlobalAveragePooling2D()(X)
     X = Dropout(0.5)(X)
+
     lstm_layer = tf.keras.layers.Reshape((60, fea_size), input_shape=(60, fea_size, 1))(input)
     X_lstm = LSTM(128, return_sequences=True)(lstm_layer)
     X_lstm = LSTM(256,return_sequences=False)(X_lstm)
     X_lstm = BatchNormalization()(X_lstm)
     X_lstm = Dense(64)(X_lstm)
-
     X = Concatenate(axis=-1)([X, X_lstm])
     X = Dropout(0.2)(X)
 

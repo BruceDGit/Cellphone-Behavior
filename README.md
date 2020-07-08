@@ -135,3 +135,13 @@ datagen = tf.keras.preprocessing.image.ImageDataGenerator(
 
 ```
 `线下0.792` `线上0.7577619047619049`
+
+- LSTM+CNN
+```text
+92/92 - 2s - loss: 0.0656 - acc: 0.9798 - val_loss: 1.0423 - val_acc: 0.7599 - lr: 7.8125e-06
+Epoch 138/500
+92/92 - 2s - loss: 0.0594 - acc: 0.9832 - val_loss: 1.0431 - val_acc: 0.7613 - lr: 7.8125e-06
+Epoch 00138: early stopping
+accuracy_score 0.766803840877915 acc_combo 0.800509504213206
+```
+`线上0.758`
