@@ -174,13 +174,13 @@ for fold, (xx, yy) in enumerate(kfold.split(x, y)):
               validation_data=(x[yy], y_[yy]),
               callbacks=[plateau, early_stopping, checkpoint])
     model.load_weights(f'models/fold{fold}.h5')
-    proba_x[yy]+=model.predict(x[yy],verbose=0,batch_size=1024)
+    proba_x=model.predict(x[yy],verbose=0,batch_size=1024)
     proba_t += model.predict(t, verbose=0, batch_size=1024) / 5.
 
     oof_y=np.argmax(proba_x,axis = 1)
-    score1=round(accuracy_score(y,oof_y), 5)
+    score1=accuracy_score(y[yy],oof_y)
     # print('accuracy_score',score1)
-    score=round(sum(acc_combo(y_true,y_pred)for y_true, y_pred in zip(y, oof_y)) / oof_y.shape[0], 5)
+    score=sum(acc_combo(y_true,y_pred)for y_true, y_pred in zip(y[yy], oof_y)) / oof_y.shape[0]
     print('accuracy_score',score1,'acc_combo',score)
 sub.behavior_id = np.argmax(proba_t, axis=1)
 sub.to_csv('ln.csv', index=False)

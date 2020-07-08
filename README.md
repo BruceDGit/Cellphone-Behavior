@@ -52,6 +52,7 @@ Epoch 00154: early stopping
 ```
 `线上 0.7661587301587302`
 
+删除两个特征之后，`线上0.7644`
 
 4. 尝试不同的归一化方式
 - Group Normalization (TensorFlow Addons)
