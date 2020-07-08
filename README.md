@@ -124,3 +124,14 @@ Epoch 00117: early stopping
 accuracy_score 0.7839506172839507 acc_combo 0.8136063753347688
 ```
 `线上0.7614603174603174`
+
+- 数据增强
+```text
+datagen = tf.keras.preprocessing.image.ImageDataGenerator(
+    height_shift_range=0.1,  # randomly shift images vertically (fraction of total height)
+    horizontal_flip=True,  # randomly flip images
+    vertical_flip=True  # randomly flip imag
+)
+
+```
+`线下0.792` `线上0.7577619047619049`

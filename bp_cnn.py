@@ -4,6 +4,8 @@ from keras.utils import to_categorical
 from sklearn.model_selection import StratifiedKFold
 import numpy as np
 from tqdm import tqdm
+import tensorflow as tf
+
 from tensorflow.keras import Model
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from tensorflow.keras.layers import *
@@ -17,6 +19,12 @@ seed(1)
 from tensorflow import random
 
 random.set_seed(2)
+
+datagen = tf.keras.preprocessing.image.ImageDataGenerator(
+    height_shift_range=0.1,  # randomly shift images vertically (fraction of total height)
+    horizontal_flip=True,  # randomly flip images
+    vertical_flip=True  # randomly flip imag
+)
 
 
 def acc_combo(y, y_pred):
@@ -50,20 +58,8 @@ data['mod'] = (data.acc_x ** 2 + data.acc_y ** 2 + data.acc_z ** 2) ** .5
 data['modg'] = (data.acc_xg ** 2 + data.acc_yg ** 2 + data.acc_zg ** 2) ** .5
 
 # 2020.7.8
-data['mod2'] = data.acc_x ** 2 + data.acc_y ** 2 + data.acc_z ** 2
-data['modg2'] = data.acc_xg ** 2 + data.acc_yg ** 2 + data.acc_zg ** 2
-
-
-# cols = [i for i in data.columns if i not in ['fragment_id', 'behavior_id','time_point']]
-# print('Scaler....')
-# for col in cols:
-#     try:
-#         scaler = MinMaxScaler().fit(data[[col]])
-#         data[[col]] = scaler.transform(data[[col]])
-#     except Exception as e:
-#         print(col)
-#         data=data.drop(columns=[col],axis=1)
-
+# data['mod2'] = data.acc_x ** 2 + data.acc_y ** 2 + data.acc_z ** 2
+# data['modg2'] = data.acc_xg ** 2 + data.acc_yg ** 2 + data.acc_zg ** 2
 
 train, test = data[:train_size], data[train_size:]
 no_fea = ['fragment_id', 'behavior_id', 'time_point']
@@ -85,6 +81,7 @@ kfold = StratifiedKFold(5, shuffle=True)
 
 def Net():
     input = Input(shape=(60, fea_size, 1))
+
     X = Conv2D(filters=64,
                kernel_size=(3, 3),
                activation='relu',
@@ -118,6 +115,15 @@ def Net():
 
     X = GlobalAveragePooling2D()(X)
     X = Dropout(0.5)(X)
+    lstm_layer = tf.keras.layers.Reshape((60, fea_size), input_shape=(60, fea_size, 1))(input)
+    X_lstm = LSTM(128, return_sequences=True)(lstm_layer)
+    X_lstm = LSTM(256,return_sequences=False)(X_lstm)
+    X_lstm = BatchNormalization()(X_lstm)
+    X_lstm = Dense(64)(X_lstm)
+
+    X = Concatenate(axis=-1)([X, X_lstm])
+    X = Dropout(0.2)(X)
+
     X = Dense(19, activation='softmax')(X)
     return Model([input], X)
 
@@ -125,6 +131,7 @@ def Net():
 proba_x = np.zeros((7292, 19))
 proba_t = np.zeros((7500, 19))
 for fold, (xx, yy) in enumerate(kfold.split(x, y)):
+    # print(x.shape) # (7292, 60, 8, 1)
     print("{}train {}th fold{}".format('==' * 20, fold + 1, '==' * 20))
     y_ = to_categorical(y, num_classes=19)
     model = Net()
@@ -153,6 +160,16 @@ for fold, (xx, yy) in enumerate(kfold.split(x, y)):
               shuffle=True,
               validation_data=(x[yy], y_[yy]),
               callbacks=[plateau, early_stopping, checkpoint])
+
+    # history = model.fit_generator(
+    #     datagen.flow(x[xx], y_[xx], batch_size=64),
+    #     steps_per_epoch=x[xx].shape[0] // 64,
+    #     epochs=500,
+    #     validation_data=(x[yy], y_[yy]),
+    #     verbose=2,
+    #     shuffle=True,
+    #     validation_steps=5,
+    #     callbacks=[plateau, early_stopping, checkpoint])
     model.load_weights(f'models/fold{fold}.h5')
     proba_x = model.predict(x[yy], verbose=0, batch_size=1024)
     proba_t += model.predict(t, verbose=0, batch_size=1024) / 5.
