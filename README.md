@@ -93,3 +93,34 @@ Epoch 00114: early stopping
 - 添加特征
 - lstm：也不算失败，目前网络结构比较简单，个人感觉应该LSTM的效果比CNN要好
 - 超参数调优
+- 加上归一化之后 效果比较差
+```text
+print('Scaler....')
+for col in ['acc_x','acc_y','acc_z','acc_xg','acc_yg','acc_zg','mod','modg']:
+    scaler = MinMaxScaler().fit(data[[col]])
+    train[[col]] = scaler.transform(train[[col]])
+```
+
+- 加入特征
+```text
+角度特征
+
+# 角度
+# data['acc_x_cos(x)'] = data['acc_x'] / data['mod']
+# data['acc_y_cos(y)'] = data['acc_y'] / data['mod']
+# data['acc_z_cos(z)'] = data['acc_z'] / data['mod']
+# data['acc_x_angle(x)'] = np.arccos(data['acc_x_cos(x)'])
+# data['acc_y_angle(y)'] = np.arccos(data['acc_y_cos(y)'])
+# data['acc_z_angle(z)'] = np.arccos(data['acc_z_cos(z)'])
+```
+
+```text
+# 2020.7.8
+data['mod2'] = data.acc_x ** 2 + data.acc_y ** 2 + data.acc_z ** 2
+data['modg2'] = data.acc_xg ** 2 + data.acc_yg ** 2 + data.acc_zg ** 2
+
+92/92 - 2s - loss: 0.0624 - acc: 0.9803 - val_loss: 0.8870 - val_acc: 0.7840 - lr: 3.1250e-05
+Epoch 00117: early stopping
+accuracy_score 0.7839506172839507 acc_combo 0.8136063753347688
+```
+`线上0.7614603174603174`
