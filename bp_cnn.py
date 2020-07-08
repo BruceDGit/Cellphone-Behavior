@@ -1,25 +1,12 @@
-import argparse
-import gc
-import keras
-import os
 from scipy.signal import resample
 import pandas as pd
-from keras import Sequential, Model
-from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
-from keras.layers import *
-from keras.optimizers import SGD, Adam
 from keras.utils import to_categorical
-from keras_preprocessing.sequence import pad_sequences
-from sklearn.feature_selection import SelectKBest, chi2, f_classif
-from sklearn.metrics import roc_auc_score, accuracy_score
 from sklearn.model_selection import StratifiedKFold
 import numpy as np
-from sklearn.preprocessing import StandardScaler, LabelEncoder, MinMaxScaler
 from tqdm import tqdm
-import tensorflow as tf
+from tensorflow.keras import Model
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from tensorflow.keras.layers import *
-import tensorflow_addons as tfa
-from tensorflow.keras.layers import add, Flatten
 from tensorflow_addons.layers import *
 
 train = pd.read_csv('data/sensor_train.csv')

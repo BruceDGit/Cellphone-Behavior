@@ -63,6 +63,8 @@ Epoch 158/500
 23/23 - 2s - loss: 0.0186 - acc: 0.9964 - val_loss: 0.8590 - val_acc: 0.8073 - lr: 7.8125e-06
 Epoch 00158: early stopping
 ```
+`线上分数0.764825396825397`
+
 - Instance Normalization (TensorFlow Addons)
 ```text
 23/23 - 2s - loss: 2.8817 - acc: 0.1030 - val_loss: 2.8588 - val_acc: 0.1021 - lr: 0.0010
@@ -75,8 +77,17 @@ Epoch 4/500
 ```
 没有成功
 - Layer Normalization (TensorFlow Core)
+```text
+Epoch 00112: ReduceLROnPlateau reducing learning rate to 6.25000029685907e-05.
+23/23 - 2s - loss: 0.0067 - acc: 0.9995 - val_loss: 0.9610 - val_acc: 0.7970 - lr: 1.2500e-04
+Epoch 113/500
+23/23 - 2s - loss: 0.0052 - acc: 0.9998 - val_loss: 0.9456 - val_acc: 0.8038 - lr: 6.2500e-05
+Epoch 114/500
+23/23 - 2s - loss: 0.0045 - acc: 0.9995 - val_loss: 0.9422 - val_acc: 0.8018 - lr: 6.2500e-05
+Epoch 00114: early stopping
 
-
+```
+`线上分数0.7607777777777778`
 ## 失败的尝试
 - 添加特征
 - lstm：也不算失败，目前网络结构比较简单，个人感觉应该LSTM的效果比CNN要好
