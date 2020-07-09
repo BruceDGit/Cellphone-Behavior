@@ -7,9 +7,9 @@ from sklearn.preprocessing import MinMaxScaler
 data_path = 'data/'
 train = pd.read_csv(data_path + 'sensor_train.csv')
 test = pd.read_csv(data_path + 'sensor_test.csv')
-# y_train = train.groupby('fragment_id')['behavior_id'].min()
-y_train = train.drop_duplicates(subset=['fragment_id']).reset_index(drop=True)['behavior_id'].values
-y_train = to_categorical(y_train)
+y_train = train.groupby('fragment_id')['behavior_id'].min()
+# y_train = train.drop_duplicates(subset=['fragment_id']).reset_index(drop=True)['behavior_id'].values
+# y_train = to_categorical(y_train)
 print("y_train.shape:", y_train.shape)
 
 data = pd.concat([train, test], sort=False)
