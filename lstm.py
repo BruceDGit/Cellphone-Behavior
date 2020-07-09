@@ -32,7 +32,9 @@ def Net():
     input = Input(shape=(seq_len, fea_size), name="input_layer")
     model = Bidirectional(LSTM(128, return_sequences=True))(input)
     model = Bidirectional(LSTM(256))(model)
+
     model = BatchNormalization()(model)
+
     model = Dropout(0.2)(model)
     model = Flatten()(model)
     model = Dense(128, activation='relu')(model)
