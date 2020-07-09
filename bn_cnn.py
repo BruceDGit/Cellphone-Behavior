@@ -1,5 +1,6 @@
 from scipy.signal import resample
 import pandas as pd
+import tensorflow as tf
 import numpy as np
 import pandas as pd
 from keras import Model
@@ -15,24 +16,41 @@ from utils import acc_combo
 train = pd.read_csv('data/sensor_train.csv')
 test = pd.read_csv('data/sensor_test.csv')
 train_size = len(train)
-
 data = pd.concat([train, test], sort=False)
-
 sub = pd.read_csv('data/提交结果示例.csv')
 y = train.groupby('fragment_id')['behavior_id'].min()
 
-train['mod'] = (train.acc_x ** 2 + train.acc_y ** 2 + train.acc_z ** 2) ** .5
-train['modg'] = (train.acc_xg ** 2 + train.acc_yg ** 2 + train.acc_zg ** 2) ** .5
-test['mod'] = (test.acc_x ** 2 + test.acc_y ** 2 + test.acc_z ** 2) ** .5
-test['modg'] = (test.acc_xg ** 2 + test.acc_yg ** 2 + test.acc_zg ** 2) ** .5
+data['mod'] = (data.acc_x ** 2 + data.acc_y ** 2 + data.acc_z ** 2) ** .5
+data['modg'] = (data.acc_xg ** 2 + data.acc_yg ** 2 + data.acc_zg ** 2) ** .5
+data['mod2'] = data.acc_x ** 2 + data.acc_y ** 2 + data.acc_z ** 2
+data['modg2'] = data.acc_xg ** 2 + data.acc_yg ** 2 + data.acc_zg ** 2
 
-train_inv = train.sort_values(by=['fragment_id', 'time_point'], ascending=[True, False])
-train_inv.columns = ['inv_{}'.format(fea) for fea in train_inv.columns]
-train = pd.concat([train, train_inv], sort=False, axis=1)
+#
+data['acc1'] = (data['acc_x'] ** 2 + data['acc_y'] ** 2) ** 0.5
+data['accg1'] = (data['acc_xg'] ** 2 + data['acc_yg'] ** 2) ** 0.5
+data['acc2'] = (data['acc_x'] ** 2 + data['acc_z'] ** 2) ** 0.5
+data['accg2'] = (data['acc_xg'] ** 2 + data['acc_zg'] ** 2) ** 0.5
+data['acc3'] = (data['acc_y'] ** 2 + data['acc_z'] ** 2) ** 0.5
+data['accg3'] = (data['acc_yg'] ** 2 + data['acc_zg'] ** 2) ** 0.5  # y - z系列 under 4%%
 
-test_inv = test.sort_values(by=['fragment_id', 'time_point'], ascending=[True, False])
-test_inv.columns = ['inv_{}'.format(fea) for fea in test_inv.columns]
-test = pd.concat([test, test_inv], sort=False, axis=1)
+data['acc_sub'] = ((data['acc_xg'] - data['acc_x']) ** 2 + (data['acc_yg'] - data['acc_y']) ** 2 + (
+        data['acc_zg'] - data['acc_z']) ** 2) ** 0.5
+data['acc_sub1'] = ((data['acc_xg'] - data['acc_x']) ** 2 + (data['acc_yg'] - data['acc_y']) ** 2) ** 0.5
+data['acc_sub2'] = ((data['acc_xg'] - data['acc_x']) ** 2 + (data['acc_zg'] - data['acc_z']) ** 2) ** 0.5
+data['acc_sub3'] = ((data['acc_yg'] - data['acc_y']) ** 2 + (data['acc_zg'] - data['acc_z']) ** 2) ** 0.5
+
+data['accxg_diff_accx'] = data['acc_xg'] - data['acc_x']
+data['accyg_diff_accy'] = data['acc_yg'] - data['acc_y']
+data['acczg_diff_accz'] = data['acc_zg'] - data['acc_z']
+
+data['accxg_add_accx'] = data['acc_xg'] + data['acc_x']
+data['accyg_add_accy'] = data['acc_yg'] + data['acc_y']
+data['acczg_add_accz'] = data['acc_zg'] + data['acc_z']
+
+
+# abs
+
+train, test = data[:train_size], data[train_size:]
 
 no_fea = ['fragment_id', 'behavior_id', 'time_point', 'inv_fragment_id', 'inv_behavior_id', 'inv_time_point']
 use_fea = [fea for fea in train.columns if fea not in no_fea]
@@ -80,6 +98,19 @@ def Net():
     X = BatchNormalization()(X)
     X = GlobalAveragePooling2D()(X)
     X = Dropout(0.5)(X)
+
+    lstm_layer = Reshape((60, fea_size), input_shape=(60, fea_size, 1))(input)
+    X_lstm = Bidirectional(LSTM(64, return_sequences=True,kernel_regularizer=tf.keras.regularizers.l2(0.001)))(lstm_layer)
+    X_lstm = Bidirectional(LSTM(128, return_sequences=False))(X_lstm)
+    X_lstm = BatchNormalization()(X_lstm)
+    X_lstm = Dense(64)(X_lstm)
+
+    dense = Dense(64, activation='relu')(Reshape((60, fea_size), input_shape=(60, fea_size, 1))(input))
+    dense = Dropout(0.2)(dense)
+    dense = Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001))(dense)
+    X = Concatenate(axis=-1)([X, X_lstm,dense])
+
+    X = Dropout(0.2)(X)
     X = BatchNormalization()(Dropout(0.2)(Dense(128, activation='relu')(Flatten()(X))))
     X = Dense(19, activation='softmax')(X)
     return Model([input], X)
@@ -100,7 +131,7 @@ for fold, (xx, yy) in enumerate(kfold.split(x, y)):
                                 verbose=1,
                                 mode='max',
                                 factor=0.5,
-                                patience=10)
+                                patience=15)
     early_stopping = EarlyStopping(monitor='val_acc',
                                    verbose=1,
                                    mode='max',
@@ -114,7 +145,7 @@ for fold, (xx, yy) in enumerate(kfold.split(x, y)):
     csv_logger = CSVLogger('logs/log.csv', separator=',', append=True)
     model.fit(x[xx], y_[xx],
               epochs=500,
-              batch_size=256,
+              batch_size=64,
               verbose=2,
               shuffle=True,
               validation_data=(x[yy], y_[yy]),
