@@ -30,14 +30,13 @@ sub = pd.read_csv('data/提交结果示例.csv')
 
 def Net():
     input = Input(shape=(seq_len, fea_size), name="input_layer")
-    model = Bidirectional(LSTM(128, return_sequences=True))(input)
-    model = Bidirectional(LSTM(256))(model)
+    model = Bidirectional(GRU(128, return_sequences=True))(input)
+    model = Bidirectional(GRU(256, kernel_regularizer=tf.keras.regularizers.l2(0.001)))(model)
 
     model = BatchNormalization()(model)
-
     model = Dropout(0.2)(model)
     model = Flatten()(model)
-    model = Dense(128, activation='relu')(model)
+    model = Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001))(model)
     model = Dropout(0.2)(model)
     # model = BatchNormalization(model)
 
