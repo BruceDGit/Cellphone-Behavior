@@ -100,6 +100,18 @@ accuracy_score 0.7949245541838135 acc_combo 0.8232738911751242
 5kflod mean combo score:0.8238260577813273
 ```
 `GlobalAveragePooling2D 线上分数0.7686349206349207`优于 GlobalMaxPooling2D
+
+## LSTM
+- 双向的LSTM
+```text
+23/23 - 1s - loss: 0.1118 - acc: 0.9609 - val_loss: 1.7949 - val_acc: 0.6543 - lr: 1.2500e-04
+Epoch 00104: early stopping
+accuracy_score 0.6694101508916324 acc_combo 0.7127833300672791
+5kflod mean acc score:0.6626436732978505
+5kflod mean combo score:0.7082775474080174
+```
+
+`线上分数0.7023650793650793`
 ## 失败的尝试
 - 添加特征
 - lstm：也不算失败，目前网络结构比较简单，个人感觉应该LSTM的效果比CNN要好
