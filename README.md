@@ -179,3 +179,6 @@ accuracy_score 0.7414266117969822 acc_combo 0.7816317199033243
 5kflod mean combo score:0.7694991110919478
 ```
 `线上 0.7402857142857142`
+
+## 参考资料
+- [HAR](https://github.com/search?q=HAR+cnn)
