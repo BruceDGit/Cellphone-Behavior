@@ -1,37 +1,36 @@
-import argparse
-import gc
+from load_data import load_data
+import matplotlib.pyplot as plt
+from os import listdir
 import keras
-import os
-from scipy.signal import resample
-import pandas as pd
-from keras import Sequential, Model
-from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
-from keras.layers import *
-from keras.optimizers import SGD, Adam
-from keras.utils import to_categorical
-from keras_preprocessing.sequence import pad_sequences
-from sklearn.feature_selection import SelectKBest, chi2, f_classif
-from sklearn.metrics import roc_auc_score, accuracy_score
-from sklearn.model_selection import StratifiedKFold
-import numpy as np
-from sklearn.preprocessing import StandardScaler, LabelEncoder, MinMaxScaler
-from tqdm import tqdm
+from keras.preprocessing import sequence
 import tensorflow as tf
-from tensorflow.keras.layers import *
-import tensorflow_addons as tfa
-from tensorflow.keras.layers import add, Flatten
-from tensorflow_addons.layers import *
+from keras.models import Sequential,Model
+from keras.layers import *
+from keras.optimizers import Adam
+from keras.models import load_model
+from keras.callbacks import ModelCheckpoint
+from keras.layers.normalization import BatchNormalization
 
 
+X_train, y_train, X_test, seq_len, fea_size = load_data()
+input_layer=Input(shape=(seq_len,fea_size),name="input_layer")
+lstm_layer=LSTM(256)(input_layer)
+bp=BatchNormalization()(lstm_layer)
+dense=Dense(128)(bp)
+pred=Dense(19,activation='softmax')(dense)
+model=Model(input_layer,pred)
+model.summary()
+adam=Adam(lr=0.001)
+checkpoint=ModelCheckpoint('models/best_model.pkl',monitor='val_accuracy',save_best_only=True,verbose=1)
+early_stop = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=100)
+model.compile(loss="binary_crossentropy",optimizer=adam,metrics=['accuracy'])
 
-data_path = 'data/'
-train = pd.read_csv(data_path+'sensor_train.csv')
-test = pd.read_csv(data_path+'sensor_test.csv')
 
-train_sequences=list()
-base_fea=['acc_x','acc_y','acc_z','acc_xg','acc_yg','acc_zg']
-
-for index,group in train.groupby(by='fragment_id'):
-    train_sequences.append(group[base_fea].values)
-train_sequences[0]
-y_train=train.drop_duplicates(subset=['fragment_id']).reset_index(drop=True)['behavior_id'].values
+model.fit(
+    X_train,
+    y_train,
+    epochs=100,
+    batch_size=32,
+    callbacks=[checkpoint,early_stop],
+    validation_split=0.2
+)

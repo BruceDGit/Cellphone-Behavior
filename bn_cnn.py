@@ -26,22 +26,33 @@ train['modg'] = (train.acc_xg ** 2 + train.acc_yg ** 2 + train.acc_zg ** 2) ** .
 test['mod'] = (test.acc_x ** 2 + test.acc_y ** 2 + test.acc_z ** 2) ** .5
 test['modg'] = (test.acc_xg ** 2 + test.acc_yg ** 2 + test.acc_zg ** 2) ** .5
 
-x = np.zeros((7292, 60, 8, 1))
-t = np.zeros((7500, 60, 8, 1))
+train_inv = train.sort_values(by=['fragment_id', 'time_point'], ascending=[True, False])
+train_inv.columns = ['inv_{}'.format(fea) for fea in train_inv.columns]
+train = pd.concat([train, train_inv], sort=False, axis=1)
+
+test_inv = test.sort_values(by=['fragment_id', 'time_point'], ascending=[True, False])
+test_inv.columns = ['inv_{}'.format(fea) for fea in test_inv.columns]
+test = pd.concat([test, test_inv], sort=False, axis=1)
+
+no_fea = ['fragment_id', 'behavior_id', 'time_point', 'inv_fragment_id', 'inv_behavior_id', 'inv_time_point']
+use_fea = [fea for fea in train.columns if fea not in no_fea]
+print("use_fea", use_fea)
+fea_size = len(use_fea)
+
+x = np.zeros((7292, 60, fea_size, 1))
+t = np.zeros((7500, 60, fea_size, 1))
 for i in tqdm(range(7292)):
     tmp = train[train.fragment_id == i][:60]
-    x[i, :, :, 0] = resample(tmp.drop(['fragment_id', 'time_point', 'behavior_id'],
-                                      axis=1), 60, np.array(tmp.time_point))[0]
+    x[i, :, :, 0] = resample(tmp[use_fea], 60, np.array(tmp.time_point))[0]
 for i in tqdm(range(7500)):
     tmp = test[test.fragment_id == i][:60]
-    t[i, :, :, 0] = resample(tmp.drop(['fragment_id', 'time_point'],
-                                      axis=1), 60, np.array(tmp.time_point))[0]
+    t[i, :, :, 0] = resample(tmp[use_fea], 60, np.array(tmp.time_point))[0]
 
 kfold = StratifiedKFold(5, shuffle=True)
 
 
 def Net():
-    input = Input(shape=(60, 8, 1))
+    input = Input(shape=(60, fea_size, 1))
     X = Conv2D(filters=64,
                kernel_size=(3, 3),
                activation='relu',
@@ -89,11 +100,11 @@ for fold, (xx, yy) in enumerate(kfold.split(x, y)):
                                 verbose=1,
                                 mode='max',
                                 factor=0.5,
-                                patience=8)
+                                patience=10)
     early_stopping = EarlyStopping(monitor='val_acc',
                                    verbose=1,
                                    mode='max',
-                                   patience=18)
+                                   patience=20)
     checkpoint = ModelCheckpoint(f'models/fold{fold}.h5',
                                  monitor='val_acc',
                                  verbose=0,
