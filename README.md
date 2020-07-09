@@ -89,6 +89,17 @@ Epoch 00114: early stopping
 
 ```
 `线上分数0.7607777777777778`
+
+5. GlobalAveragePooling2D vs GlobalMaxPooling2D
+```text
+Epoch 179/500
+23/23 - 1s - loss: 0.0718 - acc: 0.9762 - val_loss: 0.8834 - val_acc: 0.7936 - lr: 1.9531e-06
+Epoch 00179: early stopping
+accuracy_score 0.7949245541838135 acc_combo 0.8232738911751242
+5kflod mean acc score:0.7934734597517326
+5kflod mean combo score:0.8238260577813273
+```
+`GlobalAveragePooling2D 线上分数0.7686349206349207`优于 GlobalMaxPooling2D
 ## 失败的尝试
 - 添加特征
 - lstm：也不算失败，目前网络结构比较简单，个人感觉应该LSTM的效果比CNN要好

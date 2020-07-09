@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import pandas as pd
 from keras import Model
-from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
+from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau, CSVLogger
 from keras.utils import to_categorical
 from scipy.signal import resample
 from sklearn.metrics import accuracy_score
@@ -99,15 +99,16 @@ for fold, (xx, yy) in enumerate(kfold.split(x, y)):
                                  verbose=0,
                                  mode='max',
                                  save_best_only=True)
+
+    csv_logger = CSVLogger('logs/log.csv', separator=',', append=True)
     model.fit(x[xx], y_[xx],
               epochs=500,
               batch_size=256,
               verbose=2,
               shuffle=True,
               validation_data=(x[yy], y_[yy]),
-              callbacks=[plateau, early_stopping, checkpoint])
+              callbacks=[plateau, early_stopping, checkpoint, csv_logger])
     model.load_weights(f'models/fold{fold}.h5')
-
     proba_x = model.predict(x[yy], verbose=0, batch_size=1024)
     proba_t += model.predict(t, verbose=0, batch_size=1024) / 5.
 
@@ -121,4 +122,4 @@ for fold, (xx, yy) in enumerate(kfold.split(x, y)):
 print("5kflod mean acc score:{}".format(np.mean(acc_scores)))
 print("5kflod mean combo score:{}".format(np.mean(combo_scores)))
 sub.behavior_id = np.argmax(proba_t, axis=1)
-sub.to_csv('result/submit.csv', index=False)
+sub.to_csv('result/submit_acc{}_combo{}.csv'.format(np.mean(acc_scores), np.mean(combo_scores)), index=False)
