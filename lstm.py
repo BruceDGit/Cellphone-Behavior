@@ -30,8 +30,8 @@ sub = pd.read_csv('data/提交结果示例.csv')
 
 def Net():
     input = Input(shape=(seq_len, fea_size), name="input_layer")
-    model = Bidirectional(GRU(128, return_sequences=True))(input)
-    model = Bidirectional(GRU(256))(model)
+    model = Bidirectional(LSTM(128, return_sequences=True))(input)
+    model = Bidirectional(LSTM(256))(model)
     model = BatchNormalization()(model)
     model = Dropout(0.2)(model)
     model = Flatten()(model)
