@@ -8,100 +8,91 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import StratifiedKFold
 from tensorflow.keras.layers import *
 from tqdm import tqdm
-
+from load_data import load_data
 from utils import acc_combo
 
-train = pd.read_csv('data/sensor_train.csv')
-test = pd.read_csv('data/sensor_test.csv')
-train_size = len(train)
-data = pd.concat([train, test], sort=False)
+X, y, X_test, seq_len, fea_size = load_data()
+
 sub = pd.read_csv('data/提交结果示例.csv')
-y = train.groupby('fragment_id')['behavior_id'].min()
-
-data['acc'] = (data.acc_x ** 2 + data.acc_y ** 2 + data.acc_z ** 2) ** .5
-data['accg'] = (data.acc_xg ** 2 + data.acc_yg ** 2 + data.acc_zg ** 2) ** .5
-
-data['acc1'] = (data['acc_x'] ** 2 + data['acc_y'] ** 2) ** 0.5
-data['accg1'] = (data['acc_xg'] ** 2 + data['acc_yg'] ** 2) ** 0.5
-
-data['acc2'] = (data['acc_x'] ** 2 + data['acc_z'] ** 2) ** 0.5
-data['accg2'] = (data['acc_xg'] ** 2 + data['acc_zg'] ** 2) ** 0.5
-
-#     data['acc3'] = (data['acc_y'] ** 2 + data['acc_z'] ** 2) ** 0.5
-#     data['accg3'] = (data['acc_yg'] ** 2 + data['acc_zg'] ** 2) ** 0.5  # y - z系列 under 4%%
-
-
-data['acc_sub'] = ((data['acc_xg'] - data['acc_x']) ** 2 + (data['acc_yg'] - data['acc_y']) ** 2 + (
-        data['acc_zg'] - data['acc_z']) ** 2) ** 0.5
-data['acc_sub1'] = ((data['acc_xg'] - data['acc_x']) ** 2 + (data['acc_yg'] - data['acc_y']) ** 2) ** 0.5
-data['acc_sub2'] = ((data['acc_xg'] - data['acc_x']) ** 2 + (data['acc_zg'] - data['acc_z']) ** 2) ** 0.5
-#     data['acc_sub3'] = ((data['acc_yg'] - data['acc_y']) ** 2 + (data['acc_zg'] - data['acc_z'])**2) ** 0.5
-
-
-data['accxg_diff_accx'] = data['acc_xg'] - data['acc_x']
-data['accyg_diff_accy'] = data['acc_yg'] - data['acc_y']
-data['acczg_diff_accz'] = data['acc_zg'] - data['acc_z']
-
-# abs
-
-train, test = data[:train_size], data[train_size:]
-
-no_fea = ['fragment_id', 'behavior_id', 'time_point', 'inv_fragment_id', 'inv_behavior_id', 'inv_time_point']
-use_fea = [fea for fea in train.columns if fea not in no_fea]
-print("use_fea", use_fea)
-fea_size = len(use_fea)
-
-x = np.zeros((7292, 60, fea_size, 1))
-t = np.zeros((7500, 60, fea_size, 1))
-for i in tqdm(range(7292)):
-    tmp = train[train.fragment_id == i][:60]
-    x[i, :, :, 0] = resample(tmp[use_fea], 60, np.array(tmp.time_point))[0]
-for i in tqdm(range(7500)):
-    tmp = test[test.fragment_id == i][:60]
-    t[i, :, :, 0] = resample(tmp[use_fea], 60, np.array(tmp.time_point))[0]
-
 kfold = StratifiedKFold(5, shuffle=True)
 
 
 def Net():
-    input = Input(shape=(60, fea_size, 1))
-    X = Conv2D(filters=64,
-               kernel_size=(3, 3),
-               activation='relu',
-               padding='same')(input)
-    X = BatchNormalization()(X)
-    X = Conv2D(filters=128,
-               kernel_size=(3, 3),
-               activation='relu',
-               padding='same')(X)
-    X = BatchNormalization()(X)
+    input = Input(shape=(60, fea_size))
+    pred = Conv1D(filters=32,
+                  kernel_size=2,
+                  strides=1,
+                  padding='same',
+                  activation='relu')(input)
+    pred = MaxPooling1D(pool_size=2, strides=2, padding='same')(pred)
+    pred = Conv1D(filters=32,
+                  kernel_size=2,
+                  strides=1,
+                  padding='same',
+                  activation='relu')(pred)
+    pred = MaxPooling1D(pool_size=2, strides=2, padding='same')(pred)
+    pred = Conv1D(filters=64,
+                  kernel_size=2,
+                  strides=1,
+                  padding='same',
+                  activation='relu')(pred)
+    pred = MaxPooling1D(pool_size=2, strides=2, padding='same')(pred)
+    pred = Conv1D(filters=64,
+                  kernel_size=2,
+                  strides=1,
+                  padding='same',
+                  activation='relu')(pred)
+    pred = MaxPooling1D(pool_size=2, strides=2, padding='same')(pred)
+    pred = BatchNormalization()(pred)
+    pred = Dropout(0.5)(pred)
 
-    X = MaxPooling2D()(X)
-    X = AveragePooling2D()(X)
-    X = Dropout(0.2)(X)
-    X = Conv2D(filters=256,
-               kernel_size=(3, 3),
-               activation='relu',
-               padding='same')(X)
-    X = BatchNormalization()(X)
 
-    X = Dropout(0.3)(X)
-    X = Conv2D(filters=512,
-               kernel_size=(3, 3),
-               activation='relu',
-               padding='same')(X)
-    X = BatchNormalization()(X)
-    X = GlobalAveragePooling2D()(X)
-    X = Dropout(0.5)(X)
-    X = BatchNormalization()(Dropout(0.2)(Dense(128, activation='relu')(Flatten()(X))))
-    X = Dense(19, activation='softmax')(X)
-    return Model([input], X)
+    conv1_11 = Conv1D(filters=64,
+                      kernel_size=2,
+                      strides=1,
+                      padding='same',
+                      activation='relu')(pred)
+    conv1_21 = Conv1D(filters=64,
+                      kernel_size=2,
+                      strides=1,
+                      padding='same',
+                      activation='relu')(pred)
+    conv1_31 = Conv1D(filters=64,
+                      kernel_size=2,
+                      strides=1,
+                      padding='same',
+                      activation='relu')(pred)
+    avg_pool_41 = MaxPooling1D(pool_size=2, strides=1,
+                               padding='same', )(pred)
+
+    conv2_22 = Conv1D(filters=64,
+                      kernel_size=2,
+                      strides=1,
+                      padding='same',
+                      activation='relu')(conv1_21)
+    conv4_32 = Conv1D(filters=64,
+                      kernel_size=2,
+                      strides=1,
+                      padding='same',
+                      activation='relu')(conv1_31)
+    conv1_42 = Conv1D(filters=64,
+                      kernel_size=2,
+                      strides=1,
+                      padding='same',
+                      activation='relu')(avg_pool_41)
+
+    pred = Concatenate(axis=2)([conv1_11, conv2_22, conv4_32, conv1_42])
+    pred = BatchNormalization()(pred)
+    pred = Dropout(0.5)(pred)
+    pred = BatchNormalization()(Dropout(0.2)(Dense(128, activation='relu')(Flatten()(pred))))
+    pred = Dense(19, activation='softmax')(pred)
+    return Model([input], pred)
 
 
 acc_scores = []
 combo_scores = []
 proba_t = np.zeros((7500, 19))
-for fold, (xx, yy) in enumerate(kfold.split(x, y)):
+for fold, (train_index, valid_index) in enumerate(kfold.split(X, y)):
     print("{}train {}th fold{}".format('==' * 20, fold + 1, '==' * 20))
     y_ = to_categorical(y, num_classes=19)
     model = Net()
@@ -125,21 +116,21 @@ for fold, (xx, yy) in enumerate(kfold.split(x, y)):
                                  save_best_only=True)
 
     csv_logger = CSVLogger('logs/log.csv', separator=',', append=True)
-    model.fit(x[xx], y_[xx],
+    model.fit(X[train_index], y_[train_index],
               epochs=500,
               batch_size=64,
               verbose=2,
               shuffle=True,
-              validation_data=(x[yy], y_[yy]),
+              validation_data=(X[valid_index], y_[valid_index]),
               callbacks=[plateau, early_stopping, checkpoint, csv_logger])
     model.load_weights(f'models/fold{fold}.h5')
-    proba_x = model.predict(x[yy], verbose=0, batch_size=1024)
-    proba_t += model.predict(t, verbose=0, batch_size=1024) / 5.
+    proba_x = model.predict(X[valid_index], verbose=0, batch_size=1024)
+    proba_t += model.predict(X_test, verbose=0, batch_size=1024) / 5.
 
     oof_y = np.argmax(proba_x, axis=1)
-    score1 = accuracy_score(y[yy], oof_y)
+    score1 = accuracy_score(y[valid_index], oof_y)
     # print('accuracy_score',score1)
-    score = sum(acc_combo(y_true, y_pred) for y_true, y_pred in zip(y[yy], oof_y)) / oof_y.shape[0]
+    score = sum(acc_combo(y_true, y_pred) for y_true, y_pred in zip(y[valid_index], oof_y)) / oof_y.shape[0]
     print('accuracy_score', score1, 'acc_combo', score)
     acc_scores.append(score1)
     combo_scores.append(score)

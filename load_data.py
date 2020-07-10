@@ -8,14 +8,44 @@ data_path = 'data/'
 train = pd.read_csv(data_path + 'sensor_train.csv')
 test = pd.read_csv(data_path + 'sensor_test.csv')
 y_train = train.groupby('fragment_id')['behavior_id'].min()
+
+train_size = len(train)
 # y_train = train.drop_duplicates(subset=['fragment_id']).reset_index(drop=True)['behavior_id'].values
 # y_train = to_categorical(y_train)
 print("y_train.shape:", y_train.shape)
 
 data = pd.concat([train, test], sort=False)
-base_fea = ['acc_x',
-            'acc_y', 'acc_z', 'acc_xg', 'acc_yg', 'acc_zg']
-# for col in base_fea:
+data['acc'] = (data.acc_x ** 2 + data.acc_y ** 2 + data.acc_z ** 2) ** .5
+data['accg'] = (data.acc_xg ** 2 + data.acc_yg ** 2 + data.acc_zg ** 2) ** .5
+
+data['acc1'] = (data['acc_x'] ** 2 + data['acc_y'] ** 2) ** 0.5
+data['accg1'] = (data['acc_xg'] ** 2 + data['acc_yg'] ** 2) ** 0.5
+
+data['acc2'] = (data['acc_x'] ** 2 + data['acc_z'] ** 2) ** 0.5
+data['accg2'] = (data['acc_xg'] ** 2 + data['acc_zg'] ** 2) ** 0.5
+
+#     data['acc3'] = (data['acc_y'] ** 2 + data['acc_z'] ** 2) ** 0.5
+#     data['accg3'] = (data['acc_yg'] ** 2 + data['acc_zg'] ** 2) ** 0.5  # y - z系列 under 4%%
+
+
+data['acc_sub'] = ((data['acc_xg'] - data['acc_x']) ** 2 + (data['acc_yg'] - data['acc_y']) ** 2 + (
+        data['acc_zg'] - data['acc_z']) ** 2) ** 0.5
+data['acc_sub1'] = ((data['acc_xg'] - data['acc_x']) ** 2 + (data['acc_yg'] - data['acc_y']) ** 2) ** 0.5
+data['acc_sub2'] = ((data['acc_xg'] - data['acc_x']) ** 2 + (data['acc_zg'] - data['acc_z']) ** 2) ** 0.5
+#     data['acc_sub3'] = ((data['acc_yg'] - data['acc_y']) ** 2 + (data['acc_zg'] - data['acc_z'])**2) ** 0.5
+
+
+data['accxg_diff_accx'] = data['acc_xg'] - data['acc_x']
+data['accyg_diff_accy'] = data['acc_yg'] - data['acc_y']
+data['acczg_diff_accz'] = data['acc_zg'] - data['acc_z']
+
+# abs
+
+train, test = data[:train_size], data[train_size:]
+
+no_fea = ['fragment_id', 'behavior_id', 'time_point', 'inv_fragment_id', 'inv_behavior_id', 'inv_time_point']
+use_fea = [fea for fea in train.columns if fea not in no_fea]
+# for col in use_fea:
 #     min_max_scaler = MinMaxScaler()
 #     data[[col]] = min_max_scaler.fit(data[[col]])
 #     train[[col]]=min_max_scaler.transform(train[[col]])
@@ -25,7 +55,7 @@ base_fea = ['acc_x',
 train_sequences = list()
 
 for index, group in train.groupby(by='fragment_id'):
-    train_sequences.append(group[base_fea].values)
+    train_sequences.append(group[use_fea].values)
 
 # 找到序列的最大长度
 len_sequences = []
@@ -40,7 +70,7 @@ for one_seq in train_sequences:
     len_one_seq = len(one_seq)
     last_val = one_seq[-1]
     n = to_pad - len_one_seq
-    to_concat = np.repeat(last_val, n).reshape(len(base_fea), n).transpose()
+    to_concat = np.repeat(last_val, n).reshape(len(use_fea), n).transpose()
     new_one_seq = np.concatenate([one_seq, to_concat])
     train_new_seq.append(new_one_seq)
 
@@ -58,7 +88,7 @@ print("train_final_seq.shape", train_final_seq.shape)
 # =============测试集=================
 test_sequences = list()
 for index, group in test.groupby(by='fragment_id'):
-    test_sequences.append(group[base_fea].values)
+    test_sequences.append(group[use_fea].values)
 
 # 填充到最大长度
 to_pad = 61
@@ -67,7 +97,7 @@ for one_seq in test_sequences:
     len_one_seq = len(one_seq)
     last_val = one_seq[-1]
     n = to_pad - len_one_seq
-    to_concat = np.repeat(last_val, n).reshape(len(base_fea), n).transpose()
+    to_concat = np.repeat(last_val, n).reshape(len(use_fea), n).transpose()
     new_one_seq = np.concatenate([one_seq, to_concat])
     test_new_seq.append(new_one_seq)
 
@@ -83,4 +113,4 @@ print("test_final_seq.shape", test_final_seq.shape)
 
 
 def load_data():
-    return train_final_seq, y_train, test_final_seq, seq_len, len(base_fea)
+    return train_final_seq, y_train, test_final_seq, seq_len, len(use_fea)
