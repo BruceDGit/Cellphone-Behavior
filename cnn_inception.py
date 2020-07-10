@@ -1,6 +1,3 @@
-from scipy.signal import resample
-import pandas as pd
-import tensorflow as tf
 import numpy as np
 import pandas as pd
 from keras import Model
@@ -11,6 +8,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import StratifiedKFold
 from tensorflow.keras.layers import *
 from tqdm import tqdm
+
 from utils import acc_combo
 
 train = pd.read_csv('data/sensor_train.csv')

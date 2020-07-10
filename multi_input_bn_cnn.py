@@ -1,6 +1,3 @@
-from scipy.signal import resample
-import pandas as pd
-import tensorflow as tf
 import numpy as np
 import pandas as pd
 from keras import Model
@@ -11,7 +8,20 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import StratifiedKFold
 from tensorflow.keras.layers import *
 from tqdm import tqdm
+from sklearn.preprocessing import MinMaxScaler
 from utils import acc_combo
+from load_data import load_data
+
+train_lstm, _, test_lstm, seq_len, _ = load_data()
+
+features = pd.read_csv('data/features.csv')
+features = features.loc[:, 'acc_x_acc_y_acc_z_0':'acc_xg_acc_yg_7']
+print('Scaler....')
+for col in features.columns:
+    scaler = MinMaxScaler().fit(features[[col]])
+    features[[col]] = scaler.transform(features[[col]])
+
+w2v_fea = features.shape[1]
 
 train = pd.read_csv('data/sensor_train.csv')
 test = pd.read_csv('data/sensor_test.csv')
@@ -64,6 +74,9 @@ for i in tqdm(range(7500)):
 
 kfold = StratifiedKFold(5, shuffle=True)
 
+x_w2v = features[:x.shape[0]].values
+t_w2v = features[x.shape[0]:].values
+
 
 def Net():
     input = Input(shape=(60, fea_size, 1))
@@ -96,8 +109,32 @@ def Net():
     X = GlobalAveragePooling2D()(X)
     X = Dropout(0.5)(X)
     X = BatchNormalization()(Dropout(0.2)(Dense(128, activation='relu')(Flatten()(X))))
+
+    fea_input = Input(shape=(w2v_fea))
+    dense = Dense(32, activation='relu')(fea_input)
+    dense = BatchNormalization()(dense)
+    dense = Dropout(0.2)(dense)
+    dense = Dense(64, activation='relu')(dense)
+    dense = Dropout(0.2)(dense)
+    dense = Dense(128, activation='relu')(dense)
+    dense = Dropout(0.2)(dense)
+    dense = BatchNormalization()(dense)
+
+    input_lstm = Input(shape=(seq_len, 6), name="input_layer")
+    lstm = Bidirectional(GRU(128, return_sequences=True))(input_lstm)
+    lstm = Bidirectional(GRU(256))(lstm)
+    lstm = BatchNormalization()(lstm)
+    lstm = Dropout(0.2)(lstm)
+    lstm = Flatten()(lstm)
+    lstm = Dense(128, activation='relu')(lstm)
+    lstm = Dropout(0.2)(lstm)
+
+    cnn_lstm_att=Attention()([X, dense])
+
+    X = Concatenate(axis=-1)([cnn_lstm_att, lstm])
+
     X = Dense(19, activation='softmax')(X)
-    return Model([input], X)
+    return Model([input, fea_input, input_lstm], X)
 
 
 acc_scores = []
@@ -127,16 +164,16 @@ for fold, (xx, yy) in enumerate(kfold.split(x, y)):
                                  save_best_only=True)
 
     csv_logger = CSVLogger('logs/log.csv', separator=',', append=True)
-    model.fit(x[xx], y_[xx],
+    model.fit([x[xx], x_w2v[xx],train_lstm[xx]], y_[xx],
               epochs=500,
-              batch_size=64,
+              batch_size=32,
               verbose=2,
               shuffle=True,
-              validation_data=(x[yy], y_[yy]),
+              validation_data=([x[yy], x_w2v[yy],train_lstm[yy]], y_[yy]),
               callbacks=[plateau, early_stopping, checkpoint, csv_logger])
     model.load_weights(f'models/fold{fold}.h5')
-    proba_x = model.predict(x[yy], verbose=0, batch_size=1024)
-    proba_t += model.predict(t, verbose=0, batch_size=1024) / 5.
+    proba_x = model.predict([x[yy], x_w2v[yy],train_lstm[yy]], verbose=0, batch_size=1024)
+    proba_t += model.predict([t, t_w2v,test_lstm], verbose=0, batch_size=1024) / 5.
 
     oof_y = np.argmax(proba_x, axis=1)
     score1 = accuracy_score(y[yy], oof_y)

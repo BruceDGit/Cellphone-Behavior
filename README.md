@@ -187,5 +187,21 @@ accuracy_score 0.10150891632373114 acc_combo 0.1966490299823643
 5kflod mean acc score:0.35815603637043997
 5kflod mean combo score:0.4347271162644451
 ```
+
+- 加入word2vec词向量特征
+
+```text
+feainput = Input(shape=(w2v_fea))
+    dense = Dense(32, activation='relu')(feainput)
+    dense = BatchNormalization()(dense)
+    dense = Dropout(0.2)(dense)
+    dense = Dense(64, activation='relu')(dense)
+    dense = Dropout(0.2)(dense)
+    dense = Dense(128, activation='relu')(dense)
+    dense = Dropout(0.2)(dense)
+    dense = Dense(256, activation='relu')(dense)
+    dense = BatchNormalization()(dense)
+
+```
 ## 参考资料
 - [HAR](https://github.com/search?q=HAR+cnn)
