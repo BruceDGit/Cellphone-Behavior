@@ -110,15 +110,15 @@ def Net():
     X = Dropout(0.5)(X)
     X = BatchNormalization()(Dropout(0.2)(Dense(128, activation='relu')(Flatten()(X))))
 
-    fea_input = Input(shape=(w2v_fea))
-    dense = Dense(32, activation='relu')(fea_input)
-    dense = BatchNormalization()(dense)
-    dense = Dropout(0.2)(dense)
-    dense = Dense(64, activation='relu')(dense)
-    dense = Dropout(0.2)(dense)
-    dense = Dense(128, activation='relu')(dense)
-    dense = Dropout(0.2)(dense)
-    dense = BatchNormalization()(dense)
+    # fea_input = Input(shape=(w2v_fea))
+    # dense = Dense(32, activation='relu')(fea_input)
+    # dense = BatchNormalization()(dense)
+    # dense = Dropout(0.2)(dense)
+    # dense = Dense(64, activation='relu')(dense)
+    # dense = Dropout(0.2)(dense)
+    # dense = Dense(128, activation='relu')(dense)
+    # dense = Dropout(0.2)(dense)
+    # dense = BatchNormalization()(dense)
 
     input_lstm = Input(shape=(seq_len, 6), name="input_layer")
     lstm = Bidirectional(GRU(128, return_sequences=True))(input_lstm)
@@ -129,12 +129,14 @@ def Net():
     lstm = Dense(128, activation='relu')(lstm)
     lstm = Dropout(0.2)(lstm)
 
-    cnn_lstm_att=Attention()([X, dense])
+    # X = Attention()([X, lstm])
+    X = BatchNormalization()(Dropout(0.2)(Dense(128, activation='relu')(Flatten()(X))))
 
-    X = Concatenate(axis=-1)([cnn_lstm_att, lstm])
+    X = Concatenate(axis=-1)([X, lstm])
+    X = BatchNormalization()(Dropout(0.2)(Dense(128, activation='relu')(Flatten()(X))))
 
     X = Dense(19, activation='softmax')(X)
-    return Model([input, fea_input, input_lstm], X)
+    return Model([input, input_lstm], X)
 
 
 acc_scores = []
@@ -164,16 +166,16 @@ for fold, (xx, yy) in enumerate(kfold.split(x, y)):
                                  save_best_only=True)
 
     csv_logger = CSVLogger('logs/log.csv', separator=',', append=True)
-    model.fit([x[xx], x_w2v[xx],train_lstm[xx]], y_[xx],
+    model.fit([x[xx], train_lstm[xx]], y_[xx],
               epochs=500,
               batch_size=32,
               verbose=2,
               shuffle=True,
-              validation_data=([x[yy], x_w2v[yy],train_lstm[yy]], y_[yy]),
+              validation_data=([x[yy], train_lstm[yy]], y_[yy]),
               callbacks=[plateau, early_stopping, checkpoint, csv_logger])
     model.load_weights(f'models/fold{fold}.h5')
-    proba_x = model.predict([x[yy], x_w2v[yy],train_lstm[yy]], verbose=0, batch_size=1024)
-    proba_t += model.predict([t, t_w2v,test_lstm], verbose=0, batch_size=1024) / 5.
+    proba_x = model.predict([x[yy], train_lstm[yy]], verbose=0, batch_size=1024)
+    proba_t += model.predict([t, test_lstm], verbose=0, batch_size=1024) / 5.
 
     oof_y = np.argmax(proba_x, axis=1)
     score1 = accuracy_score(y[yy], oof_y)
