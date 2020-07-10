@@ -180,5 +180,12 @@ accuracy_score 0.7414266117969822 acc_combo 0.7816317199033243
 ```
 `线上 0.7402857142857142`
 
+
+- VGG19 预训练模型 
+```text
+accuracy_score 0.10150891632373114 acc_combo 0.1966490299823643
+5kflod mean acc score:0.35815603637043997
+5kflod mean combo score:0.4347271162644451
+```
 ## 参考资料
 - [HAR](https://github.com/search?q=HAR+cnn)
