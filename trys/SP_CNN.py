@@ -13,11 +13,11 @@ from tensorflow.keras.layers import *
 from tqdm import tqdm
 from utils import acc_combo
 from tensorflow.keras.initializers import glorot_uniform
-train = pd.read_csv('data/sensor_train.csv')
-test = pd.read_csv('data/sensor_test.csv')
+train = pd.read_csv('../data/sensor_train.csv')
+test = pd.read_csv('../data/sensor_test.csv')
 train_size = len(train)
 data = pd.concat([train, test], sort=False)
-sub = pd.read_csv('data/提交结果示例.csv')
+sub = pd.read_csv('../data/提交结果示例.csv')
 y = train.groupby('fragment_id')['behavior_id'].min()
 
 data['mod'] = (data.acc_x ** 2 + data.acc_y ** 2 + data.acc_z ** 2) ** .5
@@ -307,7 +307,7 @@ for fold, (xx, yy) in enumerate(kfold.split(x, y)):
                                  mode='max',
                                  save_best_only=True)
 
-    csv_logger = CSVLogger('logs/log.csv', separator=',', append=True)
+    csv_logger = CSVLogger('../logs/log.csv', separator=',', append=True)
     model.fit(x[xx], y_[xx],
               epochs=500,
               batch_size=64,

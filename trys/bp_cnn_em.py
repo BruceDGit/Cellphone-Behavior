@@ -7,8 +7,6 @@ from tqdm import tqdm
 from tensorflow.keras import Model
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from tensorflow.keras.layers import *
-from tensorflow_addons.layers import *
-from SpatialPyramidPooling import SpatialPyramidPooling
 from sklearn.metrics import *
 from numpy.random import seed
 

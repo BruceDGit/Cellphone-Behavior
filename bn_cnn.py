@@ -20,28 +20,29 @@ data = pd.concat([train, test], sort=False)
 sub = pd.read_csv('data/提交结果示例.csv')
 y = train.groupby('fragment_id')['behavior_id'].min()
 
-data['mod'] = (data.acc_x ** 2 + data.acc_y ** 2 + data.acc_z ** 2) ** .5
-data['modg'] = (data.acc_xg ** 2 + data.acc_yg ** 2 + data.acc_zg ** 2) ** .5
-data['mod2'] = data.acc_x ** 2 + data.acc_y ** 2 + data.acc_z ** 2
-data['modg2'] = data.acc_xg ** 2 + data.acc_yg ** 2 + data.acc_zg ** 2
+data['acc'] = (data.acc_x ** 2 + data.acc_y ** 2 + data.acc_z ** 2) ** .5
+data['accg'] = (data.acc_xg ** 2 + data.acc_yg ** 2 + data.acc_zg ** 2) ** .5
 
-#
 data['acc1'] = (data['acc_x'] ** 2 + data['acc_y'] ** 2) ** 0.5
 data['accg1'] = (data['acc_xg'] ** 2 + data['acc_yg'] ** 2) ** 0.5
+
 data['acc2'] = (data['acc_x'] ** 2 + data['acc_z'] ** 2) ** 0.5
 data['accg2'] = (data['acc_xg'] ** 2 + data['acc_zg'] ** 2) ** 0.5
-data['acc3'] = (data['acc_y'] ** 2 + data['acc_z'] ** 2) ** 0.5
+
+#     data['acc3'] = (data['acc_y'] ** 2 + data['acc_z'] ** 2) ** 0.5
+#     data['accg3'] = (data['acc_yg'] ** 2 + data['acc_zg'] ** 2) ** 0.5  # y - z系列 under 4%%
+
 
 data['acc_sub'] = ((data['acc_xg'] - data['acc_x']) ** 2 + (data['acc_yg'] - data['acc_y']) ** 2 + (
         data['acc_zg'] - data['acc_z']) ** 2) ** 0.5
 data['acc_sub1'] = ((data['acc_xg'] - data['acc_x']) ** 2 + (data['acc_yg'] - data['acc_y']) ** 2) ** 0.5
 data['acc_sub2'] = ((data['acc_xg'] - data['acc_x']) ** 2 + (data['acc_zg'] - data['acc_z']) ** 2) ** 0.5
+#     data['acc_sub3'] = ((data['acc_yg'] - data['acc_y']) ** 2 + (data['acc_zg'] - data['acc_z'])**2) ** 0.5
+
 
 data['accxg_diff_accx'] = data['acc_xg'] - data['acc_x']
 data['accyg_diff_accy'] = data['acc_yg'] - data['acc_y']
 data['acczg_diff_accz'] = data['acc_zg'] - data['acc_z']
-
-
 
 # abs
 
@@ -78,6 +79,7 @@ def Net():
     X = BatchNormalization()(X)
 
     X = MaxPooling2D()(X)
+    X = AveragePooling2D()(X)
     X = Dropout(0.2)(X)
     X = Conv2D(filters=256,
                kernel_size=(3, 3),
@@ -93,19 +95,6 @@ def Net():
     X = BatchNormalization()(X)
     X = GlobalAveragePooling2D()(X)
     X = Dropout(0.5)(X)
-
-    lstm_layer = Reshape((60, fea_size), input_shape=(60, fea_size, 1))(input)
-    X_lstm = Bidirectional(GRU(64, return_sequences=True,kernel_regularizer=tf.keras.regularizers.l2(0.001)))(lstm_layer)
-    X_lstm = Bidirectional(GRU(128, return_sequences=False))(X_lstm)
-    X_lstm = BatchNormalization()(X_lstm)
-    X_lstm = Dense(64)(X_lstm)
-
-    dense = Dense(64, activation='relu')(Reshape((60*fea_size,), input_shape=(60, fea_size, 1))(input))
-    dense = Dropout(0.2)(dense)
-    dense = Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001))(dense)
-    X = Concatenate(axis=-1)([X, X_lstm,dense])
-
-    X = Dropout(0.2)(X)
     X = BatchNormalization()(Dropout(0.2)(Dense(128, activation='relu')(Flatten()(X))))
     X = Dense(19, activation='softmax')(X)
     return Model([input], X)
