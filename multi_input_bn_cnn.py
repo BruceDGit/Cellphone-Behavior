@@ -11,65 +11,66 @@ from tqdm import tqdm
 from sklearn.preprocessing import MinMaxScaler
 from utils import acc_combo
 from load_data import load_data
-train_lstm, _, test_lstm, seq_len, fea_size = load_data()
 
-features=pd.read_csv('data/features.csv')
-features=features[['accg_mean',
- 'phi_acc_y_yz_std',
- 'accg_median',
- 'phi_acc_x_xz_std',
- 'acc_x_map_acc_y_map_mean',
- 'acc_xg_acc_yg_6',
- 'acc_xg_acc_yg_1',
- 'phi_acc_x_xy_std',
- 'acc_xg_acc_yg_acc_zg_7',
- 'acc_xg_acc_yg_4',
- 'acc_xg_acc_yg_2',
- 'acc_z_bool_mean',
- 'acc_xg_acc_yg_5',
- 'acc_xg_acc_yg_acc_zg_1',
- 'acc_y_map_acc_z_map_mean',
- 'acc_xg_acc_yg_3',
- 'acc_xg_acc_yg_7',
- 'acc_x_map_acc_z_map_mean',
- 'acc_xg_acc_yg_acc_zg_2',
- 'acc_z_mean',
- 'acc_y_mean',
- 'phi_acc_y_yz_mean',
- 'acc_xg_acc_yg_acc_zg_5',
- 'acc_x_acc_y_5',
- 'acc_xg_acc_yg_acc_zg_6',
- 'acc_xg_acc_yg_acc_zg_3',
- 'acc_x_mean',
- 'acc_xg_acc_yg_acc_zg_4',
- 'acc_xg_acc_yg_acc_zg_0',
- 'acc_yz_ygzy_gdirect_median',
- 'acc_y_bool_mean',
- 'acc_yz_ygzy_gdirect_std',
- 'acc_x_acc_y_3',
- 'acc_yz_ygzy_gdirect_mean',
- 'acc_xy_thea1_std',
- 'acc_xg_div_acc_x_std',
- 'two_dim_acc_yg_acc_zg_mean',
- 'acc_x_acc_y_acc_z_7',
- 'acc_xg_diff_acc_x_std',
- 'phi_acc_x_xz_mean',
- 'acc_xg_map_acc_yg_min',
- 'acc_xg_acc_yg_0',
- 'acc_x_acc_y_acc_z_5',
- 'acc_yz_ygzy_gdirect_min',
- 'acc_xy_thea1_min',
- 'acc_xg_map_acc_zg_mean',
- 'acc_yg_map_acc_zg_mean',
- 'acc_yg_map_acc_zg_min',
- 'phi_acc_xg_xy_std',
- 'phi_acc_x_xy_mean']]
+train_lstm, _, test_lstm, seq_len, _ = load_data()
+
+features = pd.read_csv('data/features.csv')
+features = features[['accg_mean',
+                     'phi_acc_y_yz_std',
+                     'accg_median',
+                     'phi_acc_x_xz_std',
+                     'acc_x_map_acc_y_map_mean',
+                     'acc_xg_acc_yg_6',
+                     'acc_xg_acc_yg_1',
+                     'phi_acc_x_xy_std',
+                     'acc_xg_acc_yg_acc_zg_7',
+                     'acc_xg_acc_yg_4',
+                     'acc_xg_acc_yg_2',
+                     'acc_z_bool_mean',
+                     'acc_xg_acc_yg_5',
+                     'acc_xg_acc_yg_acc_zg_1',
+                     'acc_y_map_acc_z_map_mean',
+                     'acc_xg_acc_yg_3',
+                     'acc_xg_acc_yg_7',
+                     'acc_x_map_acc_z_map_mean',
+                     'acc_xg_acc_yg_acc_zg_2',
+                     'acc_z_mean',
+                     'acc_y_mean',
+                     'phi_acc_y_yz_mean',
+                     'acc_xg_acc_yg_acc_zg_5',
+                     'acc_x_acc_y_5',
+                     'acc_xg_acc_yg_acc_zg_6',
+                     'acc_xg_acc_yg_acc_zg_3',
+                     'acc_x_mean',
+                     'acc_xg_acc_yg_acc_zg_4',
+                     'acc_xg_acc_yg_acc_zg_0',
+                     'acc_yz_ygzy_gdirect_median',
+                     'acc_y_bool_mean',
+                     'acc_yz_ygzy_gdirect_std',
+                     'acc_x_acc_y_3',
+                     'acc_yz_ygzy_gdirect_mean',
+                     'acc_xy_thea1_std',
+                     'acc_xg_div_acc_x_std',
+                     'two_dim_acc_yg_acc_zg_mean',
+                     'acc_x_acc_y_acc_z_7',
+                     'acc_xg_diff_acc_x_std',
+                     'phi_acc_x_xz_mean',
+                     'acc_xg_map_acc_yg_min',
+                     'acc_xg_acc_yg_0',
+                     'acc_x_acc_y_acc_z_5',
+                     'acc_yz_ygzy_gdirect_min',
+                     'acc_xy_thea1_min',
+                     'acc_xg_map_acc_zg_mean',
+                     'acc_yg_map_acc_zg_mean',
+                     'acc_yg_map_acc_zg_min',
+                     'phi_acc_xg_xy_std',
+                     'phi_acc_x_xy_mean']]
 print('Scaler....')
 for col in features.columns:
     scaler = MinMaxScaler().fit(features[[col]])
     features[[col]] = scaler.transform(features[[col]])
 
-w2v_fea=features.shape[1]
+w2v_fea = features.shape[1]
 
 train = pd.read_csv('data/sensor_train.csv')
 test = pd.read_csv('data/sensor_test.csv')
@@ -109,10 +110,10 @@ train, test = data[:train_size], data[train_size:]
 no_fea = ['fragment_id', 'behavior_id', 'time_point', 'inv_fragment_id', 'inv_behavior_id', 'inv_time_point']
 use_fea = [fea for fea in train.columns if fea not in no_fea]
 print("use_fea", use_fea)
-fea_size = len(use_fea)
+num_cols = len(use_fea)
 
-x = np.zeros((7292, 60, fea_size, 1))
-t = np.zeros((7500, 60, fea_size, 1))
+x = np.zeros((7292, 60, num_cols, 1))
+t = np.zeros((7500, 60, num_cols, 1))
 for i in tqdm(range(7292)):
     tmp = train[train.fragment_id == i][:60]
     x[i, :, :, 0] = resample(tmp[use_fea], 60, np.array(tmp.time_point))[0]
@@ -122,10 +123,13 @@ for i in tqdm(range(7500)):
 
 kfold = StratifiedKFold(5, shuffle=True)
 
-x_w2v=features[:x.shape[0]].values
-t_w2v=features[x.shape[0]:].values
+x_w2v = features[:x.shape[0]].values
+t_w2v = features[x.shape[0]:].values
+fea_size = x_w2v.shape[1]
+
+
 def Net():
-    input = Input(shape=(60, fea_size, 1))
+    input = Input(shape=(60, num_cols, 1))
     X = Conv2D(filters=64,
                kernel_size=(3, 3),
                activation='relu',
@@ -156,21 +160,46 @@ def Net():
     X = Dropout(0.5)(X)
     X = BatchNormalization()(Dropout(0.2)(Dense(128, activation='relu')(Flatten()(X))))
 
-    feainput = Input(shape=(w2v_fea))
-    dense = Dense(32, activation='relu')(feainput)
-    dense = BatchNormalization()(dense)
-    dense = Dropout(0.2)(dense)
-    dense = Dense(64, activation='relu')(dense)
-    dense = Dropout(0.2)(dense)
-    dense = Dense(128, activation='relu')(dense)
-    dense = Dropout(0.2)(dense)
-    dense = Dense(256, activation='relu')(dense)
-    dense = BatchNormalization()(dense)
+    # feainput = Input(shape=(w2v_fea))
+    # dense = Dense(32, activation='relu')(feainput)
+    # dense = BatchNormalization()(dense)
+    # dense = Dropout(0.2)(dense)
+    # dense = Dense(64, activation='relu')(dense)
+    # dense = Dropout(0.2)(dense)
+    # dense = Dense(128, activation='relu')(dense)
+    # dense = Dropout(0.2)(dense)
+    # dense = Dense(256, activation='relu')(dense)
+    # dense = BatchNormalization()(dense)
+    fea_input = Input(shape=(fea_size, 1))
+    dense = Conv1D(filters=32,
+                   kernel_size=2,
+                   strides=1,
+                   padding='same',
+                   activation='relu')(fea_input)
+    dense = MaxPooling1D(pool_size=2, strides=2, padding='same')(dense)
+    dense = Conv1D(filters=64,
+                   kernel_size=2,
+                   strides=1,
+                   padding='same',
+                   activation='relu')(dense)
+    dense = MaxPooling1D(pool_size=2, strides=2, padding='same')(dense)
+    dense = Conv1D(filters=64,
+                   kernel_size=2,
+                   strides=1,
+                   padding='same',
+                   activation='relu')(dense)
+    dense = MaxPooling1D(pool_size=2, strides=2, padding='same')(dense)
+    dense = Conv1D(filters=64,
+                   kernel_size=2,
+                   strides=1,
+                   padding='same',
+                   activation='relu')(dense)
+    dense = MaxPooling1D(pool_size=2, strides=2, padding='same')(dense)
+    dense = BatchNormalization()(Dropout(0.2)(Dense(128, activation='relu')(Flatten()(dense))))
 
-    X = Concatenate(axis=-1)([X,dense])
-
+    X = Concatenate(axis=-1)([X, dense])
     X = Dense(19, activation='softmax')(X)
-    return Model([input,feainput], X)
+    return Model([input, fea_input], X)
 
 
 acc_scores = []
@@ -188,11 +217,11 @@ for fold, (xx, yy) in enumerate(kfold.split(x, y)):
                                 verbose=1,
                                 mode='max',
                                 factor=0.5,
-                                patience=15)
+                                patience=20)
     early_stopping = EarlyStopping(monitor='val_acc',
                                    verbose=1,
                                    mode='max',
-                                   patience=20)
+                                   patience=40)
     checkpoint = ModelCheckpoint(f'models/fold{fold}.h5',
                                  monitor='val_acc',
                                  verbose=0,
@@ -200,16 +229,16 @@ for fold, (xx, yy) in enumerate(kfold.split(x, y)):
                                  save_best_only=True)
 
     csv_logger = CSVLogger('logs/log.csv', separator=',', append=True)
-    model.fit([x[xx],x_w2v[xx]], y_[xx],
+    model.fit([x[xx], x_w2v[xx]], y_[xx],
               epochs=500,
               batch_size=64,
               verbose=2,
               shuffle=True,
-              validation_data=([x[yy],x_w2v[yy]] ,y_[yy]),
+              validation_data=([x[yy], x_w2v[yy]], y_[yy]),
               callbacks=[plateau, early_stopping, checkpoint, csv_logger])
     model.load_weights(f'models/fold{fold}.h5')
-    proba_x = model.predict([x[yy],x_w2v[yy]], verbose=0, batch_size=1024)
-    proba_t += model.predict([t,t_w2v] ,verbose=0, batch_size=1024) / 5.
+    proba_x = model.predict([x[yy], x_w2v[yy]], verbose=0, batch_size=1024)
+    proba_t += model.predict([t, t_w2v], verbose=0, batch_size=1024) / 5.
 
     oof_y = np.argmax(proba_x, axis=1)
     score1 = accuracy_score(y[yy], oof_y)
