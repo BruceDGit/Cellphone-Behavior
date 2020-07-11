@@ -13,9 +13,9 @@ from utils import acc_combo
 
 X, y, X_test, seq_len, num_cols = load_data()
 
-sub = pd.read_csv('data/提交结果示例.csv')
+sub = pd.read_csv('../data/提交结果示例.csv')
 kfold = StratifiedKFold(5, shuffle=True)
-features = pd.read_csv('data/features.csv')
+features = pd.read_csv('../data/features.csv')
 features = features[['accg_mean',
                      'phi_acc_y_yz_std',
                      'accg_median',
@@ -202,7 +202,7 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(X, y)):
                                  mode='max',
                                  save_best_only=True)
 
-    csv_logger = CSVLogger('logs/log.csv', separator=',', append=True)
+    csv_logger = CSVLogger('../logs/log.csv', separator=',', append=True)
     model.fit([X[train_index], x_w2v[train_index]], y_[train_index],
               epochs=500,
               batch_size=64,

@@ -1,30 +1,17 @@
-from load_data import load_data
-import matplotlib.pyplot as plt
-from os import listdir
-import keras
-from keras.preprocessing import sequence
-import tensorflow as tf
-from keras.models import Sequential, Model
-from keras.layers import *
-from keras.optimizers import Adam
-from keras.models import load_model
-from keras.callbacks import ModelCheckpoint
-from keras.layers.normalization import BatchNormalization
-from scipy.signal import resample
-import pandas as pd
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 from keras import Model
 from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau, CSVLogger
 from keras.utils import to_categorical
-from scipy.signal import resample
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import StratifiedKFold
 from tensorflow.keras.layers import *
-from tqdm import tqdm
+
+from load_data import load_lstm_data
 from utils import acc_combo
 
-X, y, X_test, seq_len, fea_size = load_data()
+X, y, X_test, seq_len, fea_size = load_lstm_data()
 sub = pd.read_csv('data/提交结果示例.csv')
 
 
@@ -96,4 +83,4 @@ for fold, (xx, yy) in enumerate(kfold.split(X, y)):
 print("5kflod mean acc score:{}".format(np.mean(acc_scores)))
 print("5kflod mean combo score:{}".format(np.mean(combo_scores)))
 sub.behavior_id = np.argmax(proba_t, axis=1)
-sub.to_csv('result/submit_acc{}_combo{}.csv'.format(np.mean(acc_scores), np.mean(combo_scores)), index=False)
+sub.to_csv('result/lstm_acc{}_combo{}.csv'.format(np.mean(acc_scores), np.mean(combo_scores)), index=False)
