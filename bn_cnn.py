@@ -89,11 +89,11 @@ for fold, (xx, yy) in enumerate(kfold.split(x, y)):
                                 verbose=1,
                                 mode='max',
                                 factor=0.5,
-                                patience=8)
+                                patience=15)
     early_stopping = EarlyStopping(monitor='val_acc',
                                    verbose=1,
                                    mode='max',
-                                   patience=18)
+                                   patience=20)
     checkpoint = ModelCheckpoint(f'models/fold{fold}.h5',
                                  monitor='val_acc',
                                  verbose=0,
@@ -121,4 +121,4 @@ for fold, (xx, yy) in enumerate(kfold.split(x, y)):
 print("5kflod mean acc score:{}".format(np.mean(acc_scores)))
 print("5kflod mean combo score:{}".format(np.mean(combo_scores)))
 sub.behavior_id = np.argmax(proba_t, axis=1)
-sub.to_csv('result/submit.csv', index=False)
+sub.to_csv('result/cnn_acc{}_combo{}.csv'.format(np.mean(acc_scores), np.mean(combo_scores)), index=False)
