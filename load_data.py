@@ -21,29 +21,29 @@ train_size = len(train)
 print("y_train.shape:", y_train.shape)
 
 data = pd.concat([train, test], sort=False)
-data['acc'] = (data.acc_x ** 2 + data.acc_y ** 2 + data.acc_z ** 2) ** .5
-data['accg'] = (data.acc_xg ** 2 + data.acc_yg ** 2 + data.acc_zg ** 2) ** .5
-
-data['acc1'] = (data['acc_x'] ** 2 + data['acc_y'] ** 2) ** 0.5
-data['accg1'] = (data['acc_xg'] ** 2 + data['acc_yg'] ** 2) ** 0.5
-
-data['acc2'] = (data['acc_x'] ** 2 + data['acc_z'] ** 2) ** 0.5
-data['accg2'] = (data['acc_xg'] ** 2 + data['acc_zg'] ** 2) ** 0.5
-
-#     data['acc3'] = (data['acc_y'] ** 2 + data['acc_z'] ** 2) ** 0.5
-#     data['accg3'] = (data['acc_yg'] ** 2 + data['acc_zg'] ** 2) ** 0.5  # y - z系列 under 4%%
-
-
-data['acc_sub'] = ((data['acc_xg'] - data['acc_x']) ** 2 + (data['acc_yg'] - data['acc_y']) ** 2 + (
-        data['acc_zg'] - data['acc_z']) ** 2) ** 0.5
-data['acc_sub1'] = ((data['acc_xg'] - data['acc_x']) ** 2 + (data['acc_yg'] - data['acc_y']) ** 2) ** 0.5
-data['acc_sub2'] = ((data['acc_xg'] - data['acc_x']) ** 2 + (data['acc_zg'] - data['acc_z']) ** 2) ** 0.5
-#     data['acc_sub3'] = ((data['acc_yg'] - data['acc_y']) ** 2 + (data['acc_zg'] - data['acc_z'])**2) ** 0.5
-
-
-data['accxg_diff_accx'] = data['acc_xg'] - data['acc_x']
-data['accyg_diff_accy'] = data['acc_yg'] - data['acc_y']
-data['acczg_diff_accz'] = data['acc_zg'] - data['acc_z']
+# data['acc'] = (data.acc_x ** 2 + data.acc_y ** 2 + data.acc_z ** 2) ** .5
+# data['accg'] = (data.acc_xg ** 2 + data.acc_yg ** 2 + data.acc_zg ** 2) ** .5
+#
+# data['acc1'] = (data['acc_x'] ** 2 + data['acc_y'] ** 2) ** 0.5
+# data['accg1'] = (data['acc_xg'] ** 2 + data['acc_yg'] ** 2) ** 0.5
+#
+# data['acc2'] = (data['acc_x'] ** 2 + data['acc_z'] ** 2) ** 0.5
+# data['accg2'] = (data['acc_xg'] ** 2 + data['acc_zg'] ** 2) ** 0.5
+#
+# #     data['acc3'] = (data['acc_y'] ** 2 + data['acc_z'] ** 2) ** 0.5
+# #     data['accg3'] = (data['acc_yg'] ** 2 + data['acc_zg'] ** 2) ** 0.5  # y - z系列 under 4%%
+#
+#
+# data['acc_sub'] = ((data['acc_xg'] - data['acc_x']) ** 2 + (data['acc_yg'] - data['acc_y']) ** 2 + (
+#         data['acc_zg'] - data['acc_z']) ** 2) ** 0.5
+# data['acc_sub1'] = ((data['acc_xg'] - data['acc_x']) ** 2 + (data['acc_yg'] - data['acc_y']) ** 2) ** 0.5
+# data['acc_sub2'] = ((data['acc_xg'] - data['acc_x']) ** 2 + (data['acc_zg'] - data['acc_z']) ** 2) ** 0.5
+# #     data['acc_sub3'] = ((data['acc_yg'] - data['acc_y']) ** 2 + (data['acc_zg'] - data['acc_z'])**2) ** 0.5
+#
+#
+# data['accxg_diff_accx'] = data['acc_xg'] - data['acc_x']
+# data['accyg_diff_accy'] = data['acc_yg'] - data['acc_y']
+# data['acczg_diff_accz'] = data['acc_zg'] - data['acc_z']
 
 # abs
 
