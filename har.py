@@ -145,8 +145,16 @@ def Net(model_type='ModelB'):
         lstm_forward = Dense(128, activation='relu')(lstm_forward)
         lstm_forward = Dropout(0.2)(lstm_forward)
 
+        lstm_backward = Bidirectional(GRU(128, return_sequences=True))(input_backward)
+        lstm_backward = Bidirectional(GRU(256))(lstm_backward)
+        lstm_backward = BatchNormalization()(lstm_backward)
+        lstm_backward = Dropout(0.2)(lstm_backward)
+        lstm_backward = Flatten()(lstm_backward)
+        lstm_backward = Dense(128, activation='relu')(lstm_backward)
+        lstm_backward = Dropout(0.2)(lstm_backward)
+
         # output = Concatenate(axis=-1)([X_forward,X_backward])
-        output = Concatenate(axis=-1)([model_accg_forward,model_accg_backward,X_forward,X_backward,lstm_forward])
+        output = Concatenate(axis=-1)([X_forward,lstm_forward,X_backward,lstm_backward])
         output = BatchNormalization()(Dropout(0.2)(Dense(512, activation='relu')(Flatten()(output))))
 
         output = Dense(19, activation='softmax')(output)
@@ -229,3 +237,4 @@ print("5kflod mean combo score:{}".format(np.mean(combo_scores)))
 sub = pd.read_csv('data/提交结果示例.csv')
 sub.behavior_id = np.argmax(proba_t, axis=1)
 sub.to_csv('result/har_acc{}_combo{}.csv'.format(np.mean(acc_scores), np.mean(combo_scores)), index=False)
+pd.DataFrame(proba_t, columns = ['pred_{}'.format(i) for i in range(19)]).to_csv(data_path + 'sub/proba_t_forward_{}.csv'.format(np.mean(acc_scores)), index = False)

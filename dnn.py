@@ -21,7 +21,7 @@ y = load_y()
 
 
 def Net(type='dense'):
-    fea_input = Input(shape=(train_features.shape[1], 1))
+    fea_input = Input(shape=(train_lstm.shape[1], train_lstm.shape[2]))
 
     if type == 'dense':
         dense = Dense(32, activation='relu')(fea_input)
@@ -34,25 +34,25 @@ def Net(type='dense'):
         dense = Dense(256, activation='relu')(dense)
     if type == 'conv1':
         dense = Conv1D(filters=32,
-                       kernel_size=2,
+                       kernel_size=6,
                        strides=1,
                        padding='same',
                        activation='relu')(fea_input)
         dense = MaxPooling1D(pool_size=2, strides=2, padding='same')(dense)
         dense = Conv1D(filters=64,
-                       kernel_size=2,
+                       kernel_size=6,
                        strides=1,
                        padding='same',
                        activation='relu')(dense)
         dense = MaxPooling1D(pool_size=2, strides=2, padding='same')(dense)
         dense = Conv1D(filters=64,
-                       kernel_size=2,
+                       kernel_size=6,
                        strides=1,
                        padding='same',
                        activation='relu')(dense)
         dense = MaxPooling1D(pool_size=2, strides=2, padding='same')(dense)
         dense = Conv1D(filters=64,
-                       kernel_size=2,
+                       kernel_size=6,
                        strides=1,
                        padding='same',
                        activation='relu')(dense)
@@ -68,7 +68,7 @@ combo_scores = []
 proba_t = np.zeros((7500, 19))
 kfold = StratifiedKFold(5, shuffle=True, random_state=42)
 
-for fold, (train_index, valid_index) in enumerate(kfold.split(train_features, y)):
+for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
     print("{}train {}th fold{}".format('==' * 20, fold + 1, '==' * 20))
     y_ = to_categorical(y, num_classes=19)
     model = Net(type='conv1')
@@ -92,17 +92,17 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_features, y)
                                  save_best_only=True)
 
     csv_logger = CSVLogger('logs/log.csv', separator=',', append=True)
-    history=model.fit(train_features[train_index], y_[train_index],
+    history=model.fit(train_lstm[train_index], y_[train_index],
               epochs=500,
               batch_size=64,
               verbose=2,
               shuffle=True,
-              validation_data=(train_features[valid_index],
+              validation_data=(train_lstm[valid_index],
                                y_[valid_index]),
               callbacks=[plateau, early_stopping, checkpoint, csv_logger])
     model.load_weights(f'models/fold{fold}.h5')
-    proba_x = model.predict(train_features[valid_index], verbose=0, batch_size=1024)
-    proba_t += model.predict(test_features, verbose=0, batch_size=1024) / 5.
+    proba_x = model.predict(train_lstm[valid_index], verbose=0, batch_size=1024)
+    proba_t += model.predict(test_lstm, verbose=0, batch_size=1024) / 5.
 
     oof_y = np.argmax(proba_x, axis=1)
     score1 = accuracy_score(y[valid_index], oof_y)

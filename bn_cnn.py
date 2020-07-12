@@ -13,6 +13,9 @@ from tqdm import tqdm
 from utils import acc_combo
 
 train = pd.read_csv('data/sensor_train.csv')
+train_inv=train.sort_values(by=['fragment_id', 'time_point'], ascending=[True, False])
+train_inv['fragment_id']=train_inv['fragment_id']+7292
+train = pd.concat([train,train_inv],axis=0)
 test = pd.read_csv('data/sensor_test.csv')
 train_size = len(train)
 
@@ -26,9 +29,9 @@ train['modg'] = (train.acc_xg ** 2 + train.acc_yg ** 2 + train.acc_zg ** 2) ** .
 test['mod'] = (test.acc_x ** 2 + test.acc_y ** 2 + test.acc_z ** 2) ** .5
 test['modg'] = (test.acc_xg ** 2 + test.acc_yg ** 2 + test.acc_zg ** 2) ** .5
 
-x = np.zeros((7292, 60, 8, 1))
+x = np.zeros((7292*2, 60, 8, 1))
 t = np.zeros((7500, 60, 8, 1))
-for i in tqdm(range(7292)):
+for i in tqdm(range(7292*2)):
     tmp = train[train.fragment_id == i][:60]
     x[i, :, :, 0] = resample(tmp.drop(['fragment_id', 'time_point', 'behavior_id'],
                                       axis=1), 60, np.array(tmp.time_point))[0]
