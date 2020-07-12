@@ -112,6 +112,12 @@ accuracy_score 0.6694101508916324 acc_combo 0.7127833300672791
 ```
 
 `线上分数0.7023650793650793`
+
+- Multi Input
+cnn双输入（正向sequences和反向sequences） 可以对应har.py代码，
+线上0.7726190476190478
+线下har_acc0.8123967315118028_combo0.8401833538228309.csv
+
 ## 失败的尝试
 - 添加特征
 - lstm：也不算失败，目前网络结构比较简单，个人感觉应该LSTM的效果比CNN要好
@@ -205,3 +211,4 @@ feainput = Input(shape=(w2v_fea))
 ```
 ## 参考资料
 - [HAR](https://github.com/search?q=HAR+cnn)
+- [HAR-WISDM_ar])(https://github.com/coloriz/HAR-WISDM_ar)
