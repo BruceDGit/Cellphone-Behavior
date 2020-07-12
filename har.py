@@ -32,7 +32,7 @@ y = load_y()
 
 
 def multi_conv(fea_input):
-    dense = Conv1D(filters=32,
+    dense = Conv1D(filters=16,
                    kernel_size=6,
                    strides=1,
                    padding='same',
@@ -40,7 +40,7 @@ def multi_conv(fea_input):
     dense = MaxPooling1D(pool_size=2, strides=1, padding='same')(dense)
     dense = BatchNormalization()(dense)
     dense = Dropout(0.1)(dense)
-    dense = Conv1D(filters=64,
+    dense = Conv1D(filters=32,
                    kernel_size=6,
                    strides=1,
                    padding='same',
@@ -146,7 +146,7 @@ def Net(model_type='ModelB'):
         lstm_forward = Dropout(0.2)(lstm_forward)
 
         # output = Concatenate(axis=-1)([X_forward,X_backward])
-        output = Concatenate(axis=-1)([X_forward,X_backward])
+        output = Concatenate(axis=-1)([model_accg_forward,model_accg_backward,X_forward,X_backward,lstm_forward])
         output = BatchNormalization()(Dropout(0.2)(Dense(512, activation='relu')(Flatten()(output))))
 
         output = Dense(19, activation='softmax')(output)
