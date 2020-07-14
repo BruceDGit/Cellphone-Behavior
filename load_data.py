@@ -21,8 +21,8 @@ train_size = len(train)
 print("y_train.shape:", y_train.shape)
 
 data = pd.concat([train, test], sort=False)
-# data['acc'] = (data.acc_x ** 2 + data.acc_y ** 2 + data.acc_z ** 2) ** .5
-# data['accg'] = (data.acc_xg ** 2 + data.acc_yg ** 2 + data.acc_zg ** 2) ** .5
+data['acc'] = (data.acc_x ** 2 + data.acc_y ** 2 + data.acc_z ** 2) ** .5
+data['accg'] = (data.acc_xg ** 2 + data.acc_yg ** 2 + data.acc_zg ** 2) ** .5
 #
 # data['acc1'] = (data['acc_x'] ** 2 + data['acc_y'] ** 2) ** 0.5
 # data['accg1'] = (data['acc_xg'] ** 2 + data['acc_yg'] ** 2) ** 0.5
@@ -50,16 +50,17 @@ data = pd.concat([train, test], sort=False)
 train, test = data[:train_size], data[train_size:]
 
 no_fea = ['fragment_id', 'behavior_id', 'time_point', 'inv_fragment_id', 'inv_behavior_id', 'inv_time_point']
-use_fea = [fea for fea in train.columns if fea not in no_fea]
+use_fea = [fea for fea in data.columns if fea not in no_fea]
 print("use_fea", use_fea)
 num_cols = len(use_fea)
 
 
-for col in use_fea:
-    min_max_scaler = MinMaxScaler()
-    data[[col]] = min_max_scaler.fit(data[[col]])
-    train[[col]]=min_max_scaler.transform(train[[col]])
-    test[[col]]=min_max_scaler.transform(test[[col]])
+# for col in use_fea:
+#     print(col)
+#     min_max_scaler = MinMaxScaler()
+#     data[[col]] = min_max_scaler.fit(data[[col]])
+#     train[[col]]=min_max_scaler.transform(train[[col]])
+#     test[[col]]=min_max_scaler.transform(test[[col]])
 
 
 def load_lstm_data():

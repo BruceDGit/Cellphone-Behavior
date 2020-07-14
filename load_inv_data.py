@@ -24,8 +24,8 @@ train_size = len(train)
 print("y_train.shape:", y_train.shape)
 
 data = pd.concat([train, test], sort=False)
-# data['acc'] = (data.acc_x ** 2 + data.acc_y ** 2 + data.acc_z ** 2) ** .5
-# data['accg'] = (data.acc_xg ** 2 + data.acc_yg ** 2 + data.acc_zg ** 2) ** .5
+data['acc'] = (data.acc_x ** 2 + data.acc_y ** 2 + data.acc_z ** 2) ** .5
+data['accg'] = (data.acc_xg ** 2 + data.acc_yg ** 2 + data.acc_zg ** 2) ** .5
 #
 # data['acc1'] = (data['acc_x'] ** 2 + data['acc_y'] ** 2) ** 0.5
 # data['accg1'] = (data['acc_xg'] ** 2 + data['acc_yg'] ** 2) ** 0.5
