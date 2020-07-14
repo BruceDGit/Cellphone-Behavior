@@ -55,11 +55,11 @@ print("use_fea", use_fea)
 num_cols = len(use_fea)
 
 
-# for col in use_fea:
-#     min_max_scaler = MinMaxScaler()
-#     data[[col]] = min_max_scaler.fit(data[[col]])
-#     train[[col]]=min_max_scaler.transform(train[[col]])
-#     test[[col]]=min_max_scaler.transform(test[[col]])
+for col in use_fea:
+    min_max_scaler = MinMaxScaler()
+    data[[col]] = min_max_scaler.fit(data[[col]])
+    train[[col]]=min_max_scaler.transform(train[[col]])
+    test[[col]]=min_max_scaler.transform(test[[col]])
 
 
 def load_lstm_data():

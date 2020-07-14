@@ -67,13 +67,12 @@ def multi_conv(fea_input):
     # dense = Dropout(0.1)(dense)
     return dense
 
-
 def multi_conv2d(input_forward):
-    # input = Reshape((60, train_lstm.shape[2], 1), input_shape=(60, train_lstm.shape[2]))(input_forward)
+    input = Reshape((60, train_lstm.shape[2], 1), input_shape=(60, train_lstm.shape[2]))(input_forward)
     X = Conv2D(filters=64,
                kernel_size=(3, 3),
                activation='relu',
-               padding='same')(input_forward)
+               padding='same')(input)
     X = BatchNormalization()(X)
     X = Conv2D(filters=128,
                kernel_size=(3, 3),
@@ -100,7 +99,6 @@ def multi_conv2d(input_forward):
     # X = BatchNormalization()(Dropout(0.2)(Dense(128, activation='relu')(Flatten()(X))))
     return X
 
-
 def Net(model_type='ModelB'):
     if model_type == 'ModelA':
         model = Sequential([
@@ -116,29 +114,46 @@ def Net(model_type='ModelB'):
             Softmax()
         ], 'WISDM-ModelA')
     else:
+        # input_forward = Input(shape=(60, train_lstm.shape[2]))
+        # acc_forward = Lambda(lambda x: x[:, :, :3])(input_forward)
+        # accg_forward = Lambda(lambda x: x[:, :, 3:])(input_forward)
+        # model_acc_forward = multi_conv(acc_forward)
+        # model_accg_forward = multi_conv(accg_forward)
+        #
+        # input_backward = Input(shape=(60, train_lstm.shape[2]))
+        # acc_backward = Lambda(lambda x: x[:, :, :3])(input_backward)
+        # accg_backward = Lambda(lambda x: x[:, :, 3:])(input_backward)
+        # model_acc_backward = multi_conv(acc_backward)
+        # model_accg_backward = multi_conv(accg_backward)
+
         input_forward = Input(shape=(60, train_lstm.shape[2]))
-        new_forward = Reshape((60, train_lstm.shape[2], 1), input_shape=(60, train_lstm.shape[2]))(input_forward)
+        model_accg_forward = multi_conv(input_forward)
         input_backward = Input(shape=(60, train_lstm.shape[2]))
-        new_backward = Reshape((60, train_lstm.shape[2], 1), input_shape=(60, train_lstm.shape[2]))(input_backward)
+        model_accg_backward = multi_conv(input_backward)
 
-        acc_forward = Lambda(lambda x: x[:, :3, :])(new_forward)
-        accg_forward = Lambda(lambda x: x[:, 3:, :])(new_forward)
-        model_acc_forward = multi_conv2d(acc_forward)
-        model_accg_forward = multi_conv2d(accg_forward)
+        input=Reshape((60, train_lstm.shape[2], 1), input_shape=(60, train_lstm.shape[2]))(input_forward)
+        X_forward=multi_conv2d(input)
 
-        acc_backward = Lambda(lambda x: x[:, :3, :])(new_backward)
-        accg_backward = Lambda(lambda x: x[:, 3:, :])(new_backward)
-        model_acc_backward = multi_conv2d(acc_backward)
-        model_accg_backward = multi_conv2d(accg_backward)
+        input = Reshape((60, train_lstm.shape[2], 1), input_shape=(60, train_lstm.shape[2]))(input_backward)
+        X_backward = multi_conv2d(input)
 
-        X_forward = multi_conv2d(new_forward)
-        X_backward = multi_conv2d(new_backward)
+        lstm_forward = Bidirectional(GRU(128, return_sequences=True))(input_forward)
+        lstm_forward = Bidirectional(GRU(256))(lstm_forward)
+        lstm_forward = BatchNormalization()(lstm_forward)
+        lstm_forward = Dropout(0.2)(lstm_forward)
+        lstm_forward = Flatten()(lstm_forward)
+        lstm_forward = Dense(128, activation='relu')(lstm_forward)
+        lstm_forward = Dropout(0.2)(lstm_forward)
 
-        output = Concatenate(axis=-1)([
-            X_forward, X_backward,
-                model_acc_forward, model_accg_forward,
-            model_acc_backward, model_accg_backward
-        ])
+        lstm_backward = Bidirectional(GRU(128, return_sequences=True))(input_backward)
+        lstm_backward = Bidirectional(GRU(256))(lstm_backward)
+        lstm_backward = BatchNormalization()(lstm_backward)
+        lstm_backward = Dropout(0.2)(lstm_backward)
+        lstm_backward = Flatten()(lstm_backward)
+        lstm_backward = Dense(128, activation='relu')(lstm_backward)
+        lstm_backward = Dropout(0.2)(lstm_backward)
+
+        output = Concatenate(axis=-1)([X_forward,X_backward])
         # output = Concatenate(axis=-1)([X_forward,lstm_forward,X_backward,lstm_backward])
         output = BatchNormalization()(Dropout(0.2)(Dense(512, activation='relu')(Flatten()(output))))
 
@@ -222,5 +237,4 @@ print("5kflod mean combo score:{}".format(np.mean(combo_scores)))
 sub = pd.read_csv('data/提交结果示例.csv')
 sub.behavior_id = np.argmax(proba_t, axis=1)
 sub.to_csv('result/har_acc{}_combo{}.csv'.format(np.mean(acc_scores), np.mean(combo_scores)), index=False)
-pd.DataFrame(proba_t, columns=['pred_{}'.format(i) for i in range(19)]).to_csv(
-    'result/proba_t_forward_{}.csv'.format(np.mean(acc_scores)), index=False)
+pd.DataFrame(proba_t, columns = ['pred_{}'.format(i) for i in range(19)]).to_csv(data_path + 'sub/proba_t_forward_{}.csv'.format(np.mean(acc_scores)), index = False)
