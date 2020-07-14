@@ -211,4 +211,5 @@ feainput = Input(shape=(w2v_fea))
 ```
 ## 参考资料
 - [HAR](https://github.com/search?q=HAR+cnn)
-- [HAR-WISDM_ar])(https://github.com/coloriz/HAR-WISDM_ar)
+- [HAR-WISDM_ar](https://github.com/coloriz/HAR-WISDM_ar)
+- [Human Activity Recognition (HAR) Tutorial with Keras and Core ML](https://towardsdatascience.com/human-activity-recognition-har-tutorial-with-keras-and-core-ml-part-1-8c05e365dfa0)
