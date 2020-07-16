@@ -25,11 +25,11 @@ from utils import *
 from tensorflow.keras.layers import *
 from tensorflow.keras import Model
 
+train_features, _, test_features = load_features_data(feature_id=2)
+
 train_lstm, y1, test_lstm, seq_len, _ = load_lstm_data()
 train_lstm_inv, _, test_lstm_inv, _, _ = load_lstm_inv_data()
 y = load_y()
-
-
 
 
 def multi_conv2d(input_forward):
@@ -65,16 +65,28 @@ def multi_conv2d(input_forward):
     return X
 
 
-def Net(model_type='ModelB'):
+def Net():
     input_forward = Input(shape=(60, train_lstm.shape[2]))
     input_backward = Input(shape=(60, train_lstm.shape[2]))
     X_forward = multi_conv2d(input_forward)
     X_backward = multi_conv2d(input_backward)
-    output = Concatenate(axis=-1)([X_forward, X_backward])
-    output = BatchNormalization()(Dropout(0.2)(Dense(512, activation='relu')(Flatten()(output))))
+
+    feainput = Input(shape=(train_features.shape[1],))
+    dense = Dense(32, activation='relu')(feainput)
+    dense = BatchNormalization()(dense)
+    dense = Dropout(0.2)(dense)
+    dense = Dense(64, activation='relu')(dense)
+    dense = Dropout(0.2)(dense)
+    dense = Dense(128, activation='relu')(dense)
+    dense = Dropout(0.2)(dense)
+    dense = Dense(256, activation='relu')(dense)
+    dense = BatchNormalization()(dense)
+
+    output = Concatenate(axis=-1)([X_forward, X_backward, dense])
+    output = BatchNormalization()(Dropout(0.2)(Dense(640, activation='relu')(Flatten()(output))))
 
     output = Dense(19, activation='softmax')(output)
-    return Model([input_forward, input_backward], output)
+    return Model([input_forward, input_backward, feainput], output)
 
 
 acc_scores = []
@@ -85,7 +97,7 @@ kfold = StratifiedKFold(5, shuffle=True, random_state=42)
 for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
     print("{}train {}th fold{}".format('==' * 20, fold + 1, '==' * 20))
     y_ = to_categorical(y, num_classes=19)
-    model = Net(model_type='ModelB')
+    model = Net()
     model.compile(loss='categorical_crossentropy',
                   optimizer='rmsprop',
                   metrics=['acc'])
@@ -106,18 +118,23 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
                                  save_best_only=True)
 
     csv_logger = CSVLogger('logs/log.csv', separator=',', append=True)
-    history = model.fit([train_lstm[train_index], train_lstm_inv[train_index]],
+    history = model.fit([train_lstm[train_index],
+                         train_lstm_inv[train_index],
+                         train_features[train_index]],
                         y_[train_index],
                         epochs=500,
-                        batch_size=128,
-                        verbose=2,
+                        batch_size=64,
+                        verbose=1,
                         shuffle=True,
-                        validation_data=([train_lstm[valid_index], train_lstm_inv[valid_index]],
+                        validation_data=([train_lstm[valid_index],
+                                          train_lstm_inv[valid_index],
+                                          train_features[valid_index]],
                                          y_[valid_index]),
                         callbacks=[plateau, early_stopping, checkpoint, csv_logger])
     model.load_weights(f'models/fold{fold}.h5')
-    proba_x = model.predict([train_lstm[valid_index], train_lstm_inv[valid_index]], verbose=0, batch_size=1024)
-    proba_t += model.predict([test_lstm, test_lstm_inv], verbose=0, batch_size=1024) / 5.
+    proba_x = model.predict([train_lstm[valid_index], train_lstm_inv[valid_index], train_features[valid_index]],
+                            verbose=0, batch_size=1024)
+    proba_t += model.predict([test_lstm, test_lstm_inv, test_features], verbose=0, batch_size=1024) / 5.
 
     oof_y = np.argmax(proba_x, axis=1)
     score1 = accuracy_score(y[valid_index], oof_y)
@@ -152,4 +169,4 @@ sub = pd.read_csv('data/提交结果示例.csv')
 sub.behavior_id = np.argmax(proba_t, axis=1)
 sub.to_csv('result/har_acc{}_combo{}.csv'.format(np.mean(acc_scores), np.mean(combo_scores)), index=False)
 pd.DataFrame(proba_t, columns=['pred_{}'.format(i) for i in range(19)]).to_csv(
-   'result/har_proba_t_{}.csv'.format(np.mean(acc_scores)), index=False)
+    'result/har_proba_t_{}.csv'.format(np.mean(acc_scores)), index=False)
