@@ -242,11 +242,35 @@ def load_features_data(feature_id=1):
 
         data = pd.concat([data_train, data_test], sort=False)
         df = data.drop_duplicates(subset=['fragment_id']).reset_index(drop=True)[['fragment_id', 'behavior_id']]
+
+        # data['acc'] = (data['acc_x'] ** 2 + data['acc_y'] ** 2 + data['acc_z'] ** 2) ** 0.5
+        # data['accg'] = (data['acc_xg'] ** 2 + data['acc_yg'] ** 2 + data['acc_zg'] ** 2) ** 0.5
+        # for f in tqdm([f for f in data.columns if 'acc' in f]):
+        #     for stat in ['min', 'mean', 'median', 'std']:
+        #         df[f + '_' + stat] = data.groupby('fragment_id')[f].agg(stat).values
+
         data['acc'] = (data['acc_x'] ** 2 + data['acc_y'] ** 2 + data['acc_z'] ** 2) ** 0.5
         data['accg'] = (data['acc_xg'] ** 2 + data['acc_yg'] ** 2 + data['acc_zg'] ** 2) ** 0.5
+
+        data['accxy'] = (data['acc_x'] ** 2 + data['acc_y'] ** 2) ** 0.5
+        data['accyz'] = (data['acc_y'] ** 2 + data['acc_z'] ** 2) ** 0.5
+        data['accxz'] = (data['acc_x'] ** 2 + data['acc_z'] ** 2) ** 0.5
+        data['accxyg'] = (data['acc_xg'] ** 2 + data['acc_yg'] ** 2) ** 0.5
+        data['accyzg'] = (data['acc_yg'] ** 2 + data['acc_zg'] ** 2) ** 0.5
+        data['accxzg'] = (data['acc_xg'] ** 2 + data['acc_zg'] ** 2) ** 0.5
+
+        #     data['acc_sub'] = ((data['acc_xg'] - data['acc_x']) ** 2 + (data['acc_yg'] - data['acc_y']) ** 2 + (data['acc_zg'] - data['acc_z']) ** 2) ** 0.5
+        #     data['acc_subxy'] = ((data['acc_xg'] - data['acc_x']) ** 2 + (data['acc_yg'] - data['acc_y']) ** 2) ** 0.5
+        #     data['acc_subxz'] = ((data['acc_xg'] - data['acc_x']) ** 2 + (data['acc_zg'] - data['acc_z']) ** 2) ** 0.5
+        #     data['acc_subyz'] = ((data['acc_yg'] - data['acc_y']) ** 2 + (data['acc_zg'] - data['acc_z']) ** 2) ** 0.5
+
+        # 统计特征
         for f in tqdm([f for f in data.columns if 'acc' in f]):
-            for stat in ['min', 'mean', 'median', 'std']:
-                df[f + '_' + stat] = data.groupby('fragment_id')[f].agg(stat).values
+            for stat in ['min', 'mean', 'median', 'std']:  # skew
+                df['{}_{}'.format(f, stat)] = data.groupby('fragment_id')[f].agg(stat).values
+
+        train_df = df[df[label].isna() == False].reset_index(drop=True)
+        test_df = df[df[label].isna() == True].reset_index(drop=True)
 
         train_df = df[df[label].isna() == False].reset_index(drop=True)
         test_df = df[df[label].isna() == True].reset_index(drop=True)

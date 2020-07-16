@@ -72,15 +72,22 @@ def Net():
     X_backward = multi_conv2d(input_backward)
 
     feainput = Input(shape=(train_features.shape[1],))
-    dense = Dense(32, activation='relu')(feainput)
+    # dense = Dense(32, activation='relu')(feainput)
+    # dense = BatchNormalization()(dense)
+    # dense = Dropout(0.2)(dense)
+    # dense = Dense(64, activation='relu')(dense)
+    # dense = Dropout(0.2)(dense)
+    # dense = Dense(128, activation='relu')(dense)
+    # dense = Dropout(0.2)(dense)
+    # dense = Dense(256, activation='relu')(dense)
+    # dense = BatchNormalization()(dense)
+    # fea_input = Input(shape=(train_features.shape[1]))
+
+    dense = Dense(256, activation='relu')(feainput)
     dense = BatchNormalization()(dense)
-    dense = Dropout(0.2)(dense)
-    dense = Dense(64, activation='relu')(dense)
-    dense = Dropout(0.2)(dense)
-    dense = Dense(128, activation='relu')(dense)
-    dense = Dropout(0.2)(dense)
-    dense = Dense(256, activation='relu')(dense)
-    dense = BatchNormalization()(dense)
+    dense = Dense(512, activation='relu')(dense)
+    dense = Dense(1024, activation='relu')(dense)
+    dense = BatchNormalization()(Dropout(0.2)(Dense(64, activation='relu')(Flatten()(dense))))
 
     output = Concatenate(axis=-1)([X_forward, X_backward, dense])
     output = BatchNormalization()(Dropout(0.2)(Dense(640, activation='relu')(Flatten()(output))))
@@ -106,11 +113,11 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
                                 verbose=1,
                                 mode='max',
                                 factor=0.5,
-                                patience=20)
+                                patience=10)
     early_stopping = EarlyStopping(monitor='val_acc',
                                    verbose=1,
                                    mode='max',
-                                   patience=40)
+                                   patience=15)
     checkpoint = ModelCheckpoint(f'models/fold{fold}.h5',
                                  monitor='val_acc',
                                  verbose=0,
