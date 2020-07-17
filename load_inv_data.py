@@ -79,8 +79,13 @@ def load_lstm_inv_data():
         len_one_seq = len(one_seq)
         last_val = one_seq[-1]
         n = to_pad - len_one_seq
-        to_concat = np.repeat(last_val, n).reshape(len(use_fea), n).transpose()
-        new_one_seq = np.concatenate([one_seq, to_concat])
+        # to_concat = np.repeat(last_val, n).reshape(len(use_fea), n).transpose()
+        # new_one_seq = np.concatenate([one_seq, to_concat])
+        if n != 0:
+            to_concat = one_seq[:n]
+            new_one_seq = np.concatenate([one_seq, to_concat])
+        else:
+            new_one_seq = one_seq
         train_new_seq.append(new_one_seq)
 
     train_final_seq = np.stack(train_new_seq)
@@ -105,8 +110,13 @@ def load_lstm_inv_data():
         len_one_seq = len(one_seq)
         last_val = one_seq[-1]
         n = to_pad - len_one_seq
-        to_concat = np.repeat(last_val, n).reshape(len(use_fea), n).transpose()
-        new_one_seq = np.concatenate([one_seq, to_concat])
+        # to_concat = np.repeat(last_val, n).reshape(len(use_fea), n).transpose()
+        # new_one_seq = np.concatenate([one_seq, to_concat])
+        if n != 0:
+            to_concat = one_seq[:n]
+            new_one_seq = np.concatenate([one_seq, to_concat])
+        else:
+            new_one_seq = one_seq
         test_new_seq.append(new_one_seq)
 
     test_final_seq = np.stack(test_new_seq)

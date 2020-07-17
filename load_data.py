@@ -74,7 +74,6 @@ def load_lstm_data():
     len_sequences = []
     for one_seq in train_sequences:
         len_sequences.append(len(one_seq))
-    print(pd.Series(len_sequences).describe())  # 最长的序列有61个
 
     # 填充序列
     to_pad = 61
@@ -83,8 +82,13 @@ def load_lstm_data():
         len_one_seq = len(one_seq)
         last_val = one_seq[-1]
         n = to_pad - len_one_seq
-        to_concat = np.repeat(last_val, n).reshape(len(use_fea), n).transpose()
-        new_one_seq = np.concatenate([one_seq, to_concat])
+        # to_concat = np.repeat(last_val, n).reshape(len(use_fea), n).transpose()
+        # new_one_seq = np.concatenate([one_seq, to_concat])
+        if n != 0:
+            to_concat = one_seq[:n]
+            new_one_seq = np.concatenate([one_seq, to_concat])
+        else:
+            new_one_seq = one_seq
         train_new_seq.append(new_one_seq)
 
     train_final_seq = np.stack(train_new_seq)
@@ -102,6 +106,10 @@ def load_lstm_data():
     for index, group in test.groupby(by='fragment_id'):
         test_sequences.append(group[use_fea].values)
 
+    for one_seq in test_sequences:
+        len_sequences.append(len(one_seq))
+    print(pd.Series(len_sequences).describe())  # 最长的序列有61个
+
     # 填充到最大长度
     to_pad = 61
     test_new_seq = []
@@ -109,8 +117,14 @@ def load_lstm_data():
         len_one_seq = len(one_seq)
         last_val = one_seq[-1]
         n = to_pad - len_one_seq
-        to_concat = np.repeat(last_val, n).reshape(len(use_fea), n).transpose()
-        new_one_seq = np.concatenate([one_seq, to_concat])
+        # to_concat = np.repeat(last_val, n).reshape(len(use_fea), n).transpose()
+        # new_one_seq = np.concatenate([one_seq, to_concat])
+        if n != 0:
+            to_concat = one_seq[:n]
+            new_one_seq = np.concatenate([one_seq, to_concat])
+        else:
+            new_one_seq = one_seq
+
         test_new_seq.append(new_one_seq)
 
     test_final_seq = np.stack(test_new_seq)
@@ -138,7 +152,7 @@ def load_cnn_data():
 
 
 def load_features_data(feature_id=1):
-    if feature_id==1:
+    if feature_id == 1:
         if not os.path.exists('data/df_train_test_features.csv'):
             data_path = 'data/'
             df_train = pd.read_csv(data_path + 'sensor_train.csv')
@@ -167,7 +181,8 @@ def load_features_data(feature_id=1):
                 'acc_yg': agg_func,
                 'acc_zg': agg_func
             }
-            df_train_test_list = df_train_test.groupby(['flag', 'fragment_id', 'behavior_id']).agg(map_agg_func).reset_index()
+            df_train_test_list = df_train_test.groupby(['flag', 'fragment_id', 'behavior_id']).agg(
+                map_agg_func).reset_index()
             map_features_fun = {
                 # 时域
                 'time_sum': lambda x: np.sum(x),
@@ -202,7 +217,8 @@ def load_features_data(feature_id=1):
                 'fft_std': lambda x: np.std(np.abs(np.fft.fft(x))[1:int(len(x) / 2) + 1]),
                 'fft_sum': lambda x: np.sum(np.abs(np.fft.fft(x))[1:int(len(x) / 2) + 1]),
                 'fft_entropy': lambda x: -1.0 * np.sum(np.log2(
-                    np.abs(np.fft.fft(x))[1:int(len(x) / 2) + 1] / np.sum(np.abs(np.fft.fft(x))[1:int(len(x) / 2) + 1]))),
+                    np.abs(np.fft.fft(x))[1:int(len(x) / 2) + 1] / np.sum(
+                        np.abs(np.fft.fft(x))[1:int(len(x) / 2) + 1]))),
                 'fft_energy': lambda x: np.sum(np.power(np.abs(np.fft.fft(x))[1:int(len(x) / 2) + 1], 2)),
                 'fft_skew': lambda x: skew(np.abs(np.fft.fft(x))[1:int(len(x) / 2) + 1]),
                 'fft_kurtosis': lambda x: kurtosis(np.abs(np.fft.fft(x))[1:int(len(x) / 2) + 1]),
@@ -226,14 +242,14 @@ def load_features_data(feature_id=1):
                 min_max_scaler = MinMaxScaler()
                 df_train_test_features[[col]] = min_max_scaler.fit_transform(df_train_test_features[[col]])
             except Exception as e:
-                print(e,col)
+                print(e, col)
                 cols.remove(col)
         X_train = df_train_test_features[df_train_test_features['flag'] == 'train'][cols].values
         y_train = df_train_test_features[df_train_test_features['flag'] == 'train']['behavior_id'].values
         X_test = df_train_test_features[df_train_test_features['flag'] == 'test'][cols].values
 
         return X_train, y_train, X_test
-    elif feature_id==2:
+    elif feature_id == 2:
         data_path = 'data/'
         data_train = pd.read_csv(data_path + 'sensor_train.csv')
         data_test = pd.read_csv(data_path + 'sensor_test.csv')
@@ -284,12 +300,11 @@ def load_features_data(feature_id=1):
         train_y = train_df[label].values
         test_x = test_df[used_feat].values
 
-        return train_x,train_y,test_x
-
-
-
-# X_train, y_train, X_test = load_features_data()
+        return train_x, train_y, test_x
 
 
 def load_y():
     return y_train
+
+
+train_lstm, y1, test_lstm, seq_len, _ = load_lstm_data()
