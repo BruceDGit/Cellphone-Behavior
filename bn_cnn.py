@@ -1,8 +1,8 @@
 from scipy.signal import resample
-import pandas as pd
+import tensorflow as tf
 import numpy as np
 import pandas as pd
-from keras import Model
+from keras.models import Model
 from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from keras.utils import to_categorical
 from scipy.signal import resample

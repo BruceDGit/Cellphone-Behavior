@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from keras import Model
-from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau, CSVLogger
-from keras.utils import to_categorical
+from tensorflow.keras import Model
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau, CSVLogger
+from tensorflow.keras.utils import to_categorical
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import StratifiedKFold
 from tensorflow.keras.layers import *
@@ -17,8 +17,8 @@ sub = pd.read_csv('data/提交结果示例.csv')
 
 def Net():
     input = Input(shape=(seq_len, fea_size), name="input_layer")
-    model = Bidirectional(GRU(128, return_sequences=True))(input)
-    model = Bidirectional(GRU(256, kernel_regularizer=tf.keras.regularizers.l2(0.001)))(model)
+    model = GRU(128, return_sequences=True)(input)
+    model = GRU(256, kernel_regularizer=tf.keras.regularizers.l2(0.001))(model)
 
     model = BatchNormalization()(model)
     model = Dropout(0.2)(model)
