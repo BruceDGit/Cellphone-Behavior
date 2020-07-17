@@ -8,22 +8,16 @@
 @description:
 """
 
-from argparse import ArgumentParser
-from pathlib import Path
-from sklearn.model_selection import *
 import matplotlib.pyplot as plt
 from sklearn.metrics import *
-import numpy as np
-from tensorflow.keras import Sequential
-from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, ModelCheckpoint, CSVLogger, ReduceLROnPlateau
-from tensorflow.keras.layers import InputLayer, Conv1D, BatchNormalization, ReLU, Dense, Flatten, Softmax, LSTM
-from tensorflow.keras.losses import SparseCategoricalCrossentropy
-from tensorflow.keras.optimizers import Adam
+from sklearn.model_selection import *
+from tensorflow.keras import Model
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, CSVLogger, ReduceLROnPlateau
+from tensorflow.keras.layers import *
+
 from load_data import *
 from load_inv_data import *
 from utils import *
-from tensorflow.keras.layers import *
-from tensorflow.keras import Model
 
 train_features, _, test_features = load_features_data(feature_id=2)
 
@@ -72,22 +66,15 @@ def Net():
     X_backward = multi_conv2d(input_backward)
 
     feainput = Input(shape=(train_features.shape[1],))
-    # dense = Dense(32, activation='relu')(feainput)
-    # dense = BatchNormalization()(dense)
-    # dense = Dropout(0.2)(dense)
-    # dense = Dense(64, activation='relu')(dense)
-    # dense = Dropout(0.2)(dense)
-    # dense = Dense(128, activation='relu')(dense)
-    # dense = Dropout(0.2)(dense)
-    # dense = Dense(256, activation='relu')(dense)
-    # dense = BatchNormalization()(dense)
-    # fea_input = Input(shape=(train_features.shape[1]))
-
-    dense = Dense(256, activation='relu')(feainput)
+    dense = Dense(32, activation='relu')(feainput)
     dense = BatchNormalization()(dense)
-    dense = Dense(512, activation='relu')(dense)
-    dense = Dense(1024, activation='relu')(dense)
-    dense = BatchNormalization()(Dropout(0.2)(Dense(64, activation='relu')(Flatten()(dense))))
+    dense = Dropout(0.2)(dense)
+    dense = Dense(64, activation='relu')(dense)
+    dense = Dropout(0.2)(dense)
+    dense = Dense(128, activation='relu')(dense)
+    dense = Dropout(0.2)(dense)
+    dense = Dense(256, activation='relu')(dense)
+    dense = BatchNormalization()(dense)
 
     output = Concatenate(axis=-1)([X_forward, X_backward, dense])
     output = BatchNormalization()(Dropout(0.2)(Dense(640, activation='relu')(Flatten()(output))))
@@ -113,11 +100,11 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
                                 verbose=1,
                                 mode='max',
                                 factor=0.5,
-                                patience=10)
+                                patience=20)
     early_stopping = EarlyStopping(monitor='val_acc',
                                    verbose=1,
                                    mode='max',
-                                   patience=15)
+                                   patience=30)
     checkpoint = ModelCheckpoint(f'models/fold{fold}.h5',
                                  monitor='val_acc',
                                  verbose=0,
@@ -130,7 +117,7 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
                          train_features[train_index]],
                         y_[train_index],
                         epochs=500,
-                        batch_size=64,
+                        batch_size=256,
                         verbose=1,
                         shuffle=True,
                         validation_data=([train_lstm[valid_index],
@@ -151,23 +138,23 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
     acc_scores.append(score1)
     combo_scores.append(score)
 
-    print(history.history.keys())
-    # summarize history for accuracy
-    plt.plot(history.history['acc'])
-    plt.plot(history.history['val_acc'])
-    plt.title('model accuracy')
-    plt.ylabel('accuracy')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='upper left')
-    plt.show()
-    # summarize history for loss
-    plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
-    plt.title('model loss')
-    plt.ylabel('loss')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='upper left')
-    plt.show()
+    # print(history.history.keys())
+    # # summarize history for accuracy
+    # plt.plot(history.history['acc'])
+    # plt.plot(history.history['val_acc'])
+    # plt.title('model accuracy')
+    # plt.ylabel('accuracy')
+    # plt.xlabel('epoch')
+    # plt.legend(['train', 'test'], loc='upper left')
+    # plt.show()
+    # # summarize history for loss
+    # plt.plot(history.history['loss'])
+    # plt.plot(history.history['val_loss'])
+    # plt.title('model loss')
+    # plt.ylabel('loss')
+    # plt.xlabel('epoch')
+    # plt.legend(['train', 'test'], loc='upper left')
+    # plt.show()
 
 print("5kflod mean acc score:{}".format(np.mean(acc_scores)))
 print("5kflod mean combo score:{}".format(np.mean(combo_scores)))

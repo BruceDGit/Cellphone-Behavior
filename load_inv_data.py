@@ -1,14 +1,8 @@
 import numpy as np
 import pandas as pd
-from keras.preprocessing import sequence
-from keras.utils import to_categorical
-from sklearn.preprocessing import MinMaxScaler
-from tqdm import tqdm
 from scipy.signal import resample
-from scipy.stats import skew
-from scipy.stats import kurtosis
-from scipy.stats import mode
-import os
+from tensorflow.keras.preprocessing import sequence
+from tqdm import tqdm
 
 data_path = 'data/'
 train = pd.read_csv(data_path + 'sensor_train.csv')
