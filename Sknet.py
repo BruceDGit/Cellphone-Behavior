@@ -101,9 +101,9 @@ class SKNet(object):
         return output
 
 
-def CNN():
-    inputs = Input(shape=[60, 8, 1])
-    x = Conv2D(32, 3, 1, padding="same", kernel_regularizer=l2(0.00))(inputs)
+def CNN(input_forward):
+    input = Reshape((60, train_lstm.shape[2], 1), input_shape=(60, train_lstm.shape[2]))(input_forward)
+    x = Conv2D(32, 3, 1, padding="same", kernel_regularizer=l2(0.00))(input)
     x = BatchNormalization()(x)
     x = Activation(tf.nn.relu)(x)
 
