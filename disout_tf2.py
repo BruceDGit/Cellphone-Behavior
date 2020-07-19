@@ -101,6 +101,16 @@ class Disout(tf.keras.layers.Layer):
         '''计算输出shape'''
         return input_shape
 
+    def get_config(self):
+
+        config = super().get_config().copy()
+        config.update({
+            'dist_prob': self.dist_prob,
+            'weight_behind': self.weight_behind,
+            'alpha': self.alpha,
+            'block_size': self.block_size,
+        })
+        return config
 class Disout1D(tf.keras.layers.Layer):
     '''
     disout
@@ -159,3 +169,12 @@ class Disout1D(tf.keras.layers.Layer):
     def compute_output_shape(self, input_shape):
         '''计算输出shape'''
         return input_shape
+    def get_config(self):
+
+        config = super().get_config().copy()
+        config.update({
+            'dist_prob': self.dist_prob,
+            'alpha': self.alpha,
+            'block_size': self.block_size,
+        })
+        return config
