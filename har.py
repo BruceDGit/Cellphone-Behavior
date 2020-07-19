@@ -60,13 +60,15 @@ def multi_conv2d(input_forward):
 
 
 def Net():
-    input_forward = Input(shape=(60, train_lstm.shape[2]))
-    input_backward = Input(shape=(60, train_lstm.shape[2]))
+    # 前向与后向卷积
+    input_forward = Input(shape=(60, train_lstm.shape[2]), name='input_forward')
+    input_backward = Input(shape=(60, train_lstm.shape[2]), name='input_backward')
     X_forward = multi_conv2d(input_forward)
     X_backward = multi_conv2d(input_backward)
 
-    feainput = Input(shape=(train_features.shape[1],))
-    dense = Dense(32, activation='relu')(feainput)
+    # 特征输入
+    feature_input = Input(shape=(train_features.shape[1],), name='feature_input')
+    dense = Dense(32, activation='relu')(feature_input)
     dense = BatchNormalization()(dense)
     dense = Dropout(0.2)(dense)
     dense = Dense(64, activation='relu')(dense)
@@ -80,7 +82,7 @@ def Net():
     output = BatchNormalization()(Dropout(0.2)(Dense(640, activation='relu')(Flatten()(output))))
 
     output = Dense(19, activation='softmax')(output)
-    return Model([input_forward, input_backward, feainput], output)
+    return Model([input_forward, input_backward, feature_input], output)
 
 
 acc_scores = []
