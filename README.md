@@ -219,6 +219,9 @@ feainput = Input(shape=(w2v_fea))
     dense = BatchNormalization()(dense)
 
 ```
+
+- Disout
+和Dropout类似，线下效果相比dropout差，线上0.787，另外收敛时间比较慢
 ## 参考资料
 - [HAR](https://github.com/search?q=HAR+cnn)
 - [HAR-WISDM_ar](https://github.com/coloriz/HAR-WISDM_ar)
