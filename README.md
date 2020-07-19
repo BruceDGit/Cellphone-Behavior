@@ -113,14 +113,14 @@ accuracy_score 0.6694101508916324 acc_combo 0.7127833300672791
 
 `线上分数0.7023650793650793`
 
-- Multi Input
+## Multi Input
 cnn双输入（正向sequences和反向sequences） 可以对应har.py代码，
 线上0.7726190476190478
 线下har_acc0.8123967315118028_combo0.8401833538228309.csv
 
 
 
-- HAR：CNN输入与Dense输入融合
+## HAR：CNN输入与Dense输入融合
 优化的地方：
 
 - 目前尝试输入时间序列数据与特征数据，特征不能漫蛮力添加
@@ -132,6 +132,7 @@ cnn双输入（正向sequences和反向sequences） 可以对应har.py代码，
 - lstm：也不算失败，目前网络结构比较简单，个人感觉应该LSTM的效果比CNN要好
 - 超参数调优
 - 加上归一化之后 效果比较差
+- 根据类别频率统计class weight，加上 线上效果0.788666
 ```text
 print('Scaler....')
 for col in ['acc_x','acc_y','acc_z','acc_xg','acc_yg','acc_zg','mod','modg']:
