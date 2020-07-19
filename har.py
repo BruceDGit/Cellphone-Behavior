@@ -96,75 +96,83 @@ class_weight = np.array([0.03304992, 0.09270433, 0.05608886, 0.04552935, 0.05965
                          0.03236423, 0.06157433, 0.10065826, 0.03990675, 0.01727921,
                          0.06555129, 0.04731212, 0.03551838, 0.04731212])
 
-for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
-    print("{}train {}th fold{}".format('==' * 20, fold + 1, '==' * 20))
-    y_ = to_categorical(y, num_classes=19)
-    model = Net()
-    model.compile(loss='categorical_crossentropy',
-                  optimizer='rmsprop',
-                  metrics=['acc'])
-    model.summary()
-    plateau = ReduceLROnPlateau(monitor="val_acc",
-                                verbose=1,
-                                mode='max',
-                                factor=0.5,
-                                patience=20)
-    early_stopping = EarlyStopping(monitor='val_acc',
-                                   verbose=1,
-                                   mode='max',
-                                   patience=30)
-    checkpoint = ModelCheckpoint(f'models/fold{fold}.h5',
-                                 monitor='val_acc',
-                                 verbose=0,
-                                 mode='max',
-                                 save_best_only=True)
+# 单折 10个种子融合
+# 10 seed
+seeds = [19970412, 2019 * 2 + 1024, 4096, 2048, 1024]
+num_model_seed = 5
+for model_seed in range(num_model_seed):
+    print(model_seed + 1)
+    for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
+        print("{}train {}th fold{}".format('==' * 20, fold + 1, '==' * 20))
+        y_ = to_categorical(y, num_classes=19)
+        model = Net()
+        model.compile(loss='categorical_crossentropy',
+                      optimizer='rmsprop',
+                      metrics=['acc'])
+        model.summary()
+        plateau = ReduceLROnPlateau(monitor="val_acc",
+                                    verbose=1,
+                                    mode='max',
+                                    factor=0.5,
+                                    patience=20)
+        early_stopping = EarlyStopping(monitor='val_acc',
+                                       verbose=1,
+                                       mode='max',
+                                       patience=30)
+        checkpoint = ModelCheckpoint(f'models/fold{fold}.h5',
+                                     monitor='val_acc',
+                                     verbose=0,
+                                     mode='max',
+                                     save_best_only=True)
 
-    csv_logger = CSVLogger('logs/log.csv', separator=',', append=True)
-    history = model.fit([train_lstm[train_index],
-                         train_lstm_inv[train_index],
-                         train_features[train_index]],
-                        y_[train_index],
-                        epochs=500,
-                        batch_size=256,
-                        verbose=1,
-                        shuffle=True,
-                        class_weight=(1 - class_weight) ** 3,
-                        validation_data=([train_lstm[valid_index],
-                                          train_lstm_inv[valid_index],
-                                          train_features[valid_index]],
-                                         y_[valid_index]),
-                        callbacks=[plateau, early_stopping, checkpoint, csv_logger])
-    model.load_weights(f'models/fold{fold}.h5')
-    proba_x = model.predict([train_lstm[valid_index], train_lstm_inv[valid_index], train_features[valid_index]],
-                            verbose=0, batch_size=1024)
-    proba_t += model.predict([test_lstm, test_lstm_inv, test_features], verbose=0, batch_size=1024) / 5.
+        csv_logger = CSVLogger('logs/log.csv', separator=',', append=True)
+        history = model.fit([train_lstm[train_index],
+                             train_lstm_inv[train_index],
+                             train_features[train_index]],
+                            y_[train_index],
+                            epochs=500,
+                            batch_size=256,
+                            verbose=1,
+                            shuffle=True,
+                            class_weight=(1 - class_weight) ** 3,
+                            validation_data=([train_lstm[valid_index],
+                                              train_lstm_inv[valid_index],
+                                              train_features[valid_index]],
+                                             y_[valid_index]),
+                            callbacks=[plateau, early_stopping, checkpoint, csv_logger])
+        model.load_weights(f'models/fold{fold}.h5')
 
-    oof_y = np.argmax(proba_x, axis=1)
-    score1 = accuracy_score(y[valid_index], oof_y)
-    # print('accuracy_score',score1)
-    score = sum(acc_combo(y_true, y_pred) for y_true, y_pred in zip(y[valid_index], oof_y)) / oof_y.shape[0]
-    print('accuracy_score', score1, 'acc_combo', score)
-    acc_scores.append(score1)
-    combo_scores.append(score)
+        proba_x = model.predict([train_lstm[valid_index], train_lstm_inv[valid_index], train_features[valid_index]],
+                                verbose=0, batch_size=1024)
+        proba_t += model.predict([test_lstm, test_lstm_inv, test_features], verbose=0, batch_size=1024) / 5.
 
-    # print(history.history.keys())
-    # # summarize history for accuracy
-    # plt.plot(history.history['acc'])
-    # plt.plot(history.history['val_acc'])
-    # plt.title('model accuracy')
-    # plt.ylabel('accuracy')
-    # plt.xlabel('epoch')
-    # plt.legend(['train', 'test'], loc='upper left')
-    # plt.show()
-    # # summarize history for loss
-    # plt.plot(history.history['loss'])
-    # plt.plot(history.history['val_loss'])
-    # plt.title('model loss')
-    # plt.ylabel('loss')
-    # plt.xlabel('epoch')
-    # plt.legend(['train', 'test'], loc='upper left')
-    # plt.show()
+        oof_y = np.argmax(proba_x, axis=1)
+        score1 = accuracy_score(y[valid_index], oof_y)
+        # print('accuracy_score',score1)
+        score = sum(acc_combo(y_true, y_pred) for y_true, y_pred in zip(y[valid_index], oof_y)) / oof_y.shape[0]
+        print('accuracy_score', score1, 'acc_combo', score)
+        acc_scores.append(score1)
+        combo_scores.append(score)
 
+        # print(history.history.keys())
+        # # summarize history for accuracy
+        # plt.plot(history.history['acc'])
+        # plt.plot(history.history['val_acc'])
+        # plt.title('model accuracy')
+        # plt.ylabel('accuracy')
+        # plt.xlabel('epoch')
+        # plt.legend(['train', 'test'], loc='upper left')
+        # plt.show()
+        # # summarize history for loss
+        # plt.plot(history.history['loss'])
+        # plt.plot(history.history['val_loss'])
+        # plt.title('model loss')
+        # plt.ylabel('loss')
+        # plt.xlabel('epoch')
+        # plt.legend(['train', 'test'], loc='upper left')
+        # plt.show()
+# 平均到5个seed
+proba_t = proba_t/num_model_seed
 print("5kflod mean acc score:{}".format(np.mean(acc_scores)))
 print("5kflod mean combo score:{}".format(np.mean(combo_scores)))
 
