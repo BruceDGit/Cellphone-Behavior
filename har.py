@@ -77,7 +77,7 @@ def Net():
     dense = BatchNormalization()(dense)
 
     output = Concatenate(axis=-1)([X_forward, X_backward, dense])
-    output = BatchNormalization()(Disout1D(0.3, block_size=1)(Dense(640, activation='relu')(Flatten()(output))))
+    output = BatchNormalization()(Dropout(0.2)(Dense(640, activation='relu')(Flatten()(output))))
 
     output = Dense(19, activation='softmax')(output)
     return Model([input_forward, input_backward, feainput], output)

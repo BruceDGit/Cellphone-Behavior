@@ -307,4 +307,4 @@ def load_y():
     return y_train
 
 
-train_lstm, y1, test_lstm, seq_len, _ = load_lstm_data()
+# train_lstm, y1, test_lstm, seq_len, _ = load_lstm_data()
