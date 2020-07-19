@@ -1,37 +1,32 @@
 # 网络结构
+import os
+import pickle
+
+import numpy as np
 import tensorflow as tf
-from tensorflow.keras.layers import BatchNormalization
-from tensorflow.keras.layers import UpSampling2D
-from tensorflow.keras.layers import Conv2D
-from tensorflow.keras.layers import MaxPooling2D
-from tensorflow.keras.layers import GlobalAveragePooling2D
-from tensorflow.keras.layers import AveragePooling2D
-from tensorflow.keras.layers import GlobalMaxPooling2D
-from tensorflow.keras.layers import Dense
-from tensorflow.keras.layers import Reshape
-from tensorflow.keras.layers import Dropout
-from tensorflow.keras.layers import Softmax
+from sklearn.model_selection import StratifiedKFold
+from tensorflow.keras.callbacks import EarlyStopping
+# 加载数据和模型
+from tensorflow.keras.callbacks import ModelCheckpoint
+from tensorflow.keras.callbacks import ReduceLROnPlateau
 from tensorflow.keras.layers import Activation
-from tensorflow.keras.regularizers import l2
+from tensorflow.keras.layers import AveragePooling2D
+from tensorflow.keras.layers import BatchNormalization
+from tensorflow.keras.layers import Conv2D
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import Dropout
+from tensorflow.keras.layers import GlobalAveragePooling2D
 from tensorflow.keras.layers import Input
+from tensorflow.keras.layers import MaxPooling2D
+from tensorflow.keras.layers import Softmax
+from tensorflow.keras.layers import UpSampling2D
 from tensorflow.keras.models import Model
-from extend import WeightDecayScheduler, AdamW
-import matplotlib.pyplot as plt
-from sklearn.metrics import *
-from sklearn.model_selection import *
-from tensorflow.keras import Model
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, CSVLogger, ReduceLROnPlateau
-from tensorflow.keras.layers import *
+from tensorflow.keras.regularizers import l2
+from tensorflow.keras.utils import to_categorical
 
-from load_data import *
-from load_inv_data import *
-from utils import *
-
-train_features, _, test_features = load_features_data(feature_id=2)
-
-train_lstm, y1, test_lstm, seq_len, _ = load_lstm_data()
-train_lstm_inv, _, test_lstm_inv, _, _ = load_lstm_inv_data()
-y = load_y()
+from sjf_class_weight import DatasetLoader
+from sjf_extend import *
+from utils import score
 
 
 class SoftThreshold(tf.keras.layers.Layer):
@@ -101,9 +96,8 @@ class SKNet(object):
         return output
 
 
-def CNN(input_forward):
-    input = Reshape((60, train_lstm.shape[2], 1), input_shape=(60, train_lstm.shape[2]))(input_forward)
-    x = Conv2D(32, 3, 1, padding="same", kernel_regularizer=l2(0.00))(input)
+def CNN(inputs, num_classes):
+    x = Conv2D(32, 3, 1, padding="same", kernel_regularizer=l2(0.00))(inputs)
     x = BatchNormalization()(x)
     x = Activation(tf.nn.relu)(x)
 
@@ -128,111 +122,99 @@ def CNN(input_forward):
     x = GlobalAveragePooling2D()(x)
     x = Dropout(0.5)(x)
 
+    x = Dense(num_classes, kernel_regularizer=l2(0.00))(x)
+    x = BatchNormalization()(x)
+    x = Softmax()(x)
     return x
 
 
-def Net():
-    input_forward = Input(shape=(60, train_lstm.shape[2]))
-    input_backward = Input(shape=(60, train_lstm.shape[2]))
-    X_forward = CNN(input_forward)
-    X_backward = CNN(input_backward)
+train_csv_file = "data/sensor_train.csv"
+test_csv_file = "data/sensor_test.csv"
+batch_size = 24
 
-    feainput = Input(shape=(train_features.shape[1],))
-    dense = Dense(32, activation='relu')(feainput)
-    dense = BatchNormalization()(dense)
-    dense = Dropout(0.2)(dense)
-    dense = Dense(64, activation='relu')(dense)
-    dense = Dropout(0.2)(dense)
-    dense = Dense(128, activation='relu')(dense)
-    dense = Dropout(0.2)(dense)
-    dense = Dense(256, activation='relu')(dense)
-    dense = BatchNormalization()(dense)
+# train
+if not os.path.exists('data/x.pkl'):
+    dataset = DatasetLoader(train_csv_file, with_label=True, num_classes=19)
+    dataset = dataset.make_numpy()
+    dataset = dataset.resample(num_interpolation=64)
+    x, y = dataset.apply_data()
+    class_weight = dataset.apply_class_weights()
 
-    output = Concatenate(axis=-1)([X_forward, X_backward, dense])
-    output = BatchNormalization()(Dropout(0.2)(Dense(640, activation='relu')(Flatten()(output))))
+    with open('data/x.pkl', 'wb') as f:
+        pickle.dump(x, f)
+    with open('data/y.pkl', 'wb') as f:
+        pickle.dump(y, f)
+    with open('data/class_weight.pkl', 'wb') as f:
+        pickle.dump(class_weight, f)
+else:
+    with open('data/x.pkl', 'rb') as f:
+        x = pickle.load(f)
+    with open('data/y.pkl', 'rb') as f:
+        y = pickle.load(f)
+    with open('data/class_weight.pkl', 'rb') as f:
+        class_weight = pickle.load(f)
+# test
+if not os.path.exists('data/x_val.pkl'):
+    dataset = DatasetLoader(test_csv_file, with_label=False)
+    data = dataset.make_numpy()
+    data = dataset.resample(num_interpolation=64)
+    x_val = data.apply_data()
+    with open('data/x_val.pkl', 'wb') as f:
+        pickle.dump(x_val, f)
+else:
+    with open('data/x_val.pkl', 'rb') as f:
+        x_val = pickle.load(f)
 
-    output = Dense(19, activation='softmax')(output)
-    return Model([input_forward, input_backward, feainput], output)
 
 
-acc_scores = []
-combo_scores = []
+kfold = StratifiedKFold(5, shuffle=True,random_state=12255877)
 proba_t = np.zeros((7500, 19))
-kfold = StratifiedKFold(5, shuffle=True, random_state=42)
-
-for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
-    print("{}train {}th fold{}".format('==' * 20, fold + 1, '==' * 20))
-    y_ = to_categorical(y, num_classes=19)
-    model = Net()
-    model.compile(loss='categorical_crossentropy',
-                  optimizer='rmsprop',
-                  metrics=['acc'])
-    model.summary()
-    plateau = ReduceLROnPlateau(monitor="val_acc",
+train_score=[]
+test_score=[]
+for fold,(xx,yy) in enumerate(kfold.split(x,y)):
+    inputs=Input(shape=[64,8,1])
+    outputs=CNN(inputs,num_classes=19)
+    model=Model(inputs=inputs,outputs=outputs)
+    _y=to_categorical(y,19)
+    plateau = ReduceLROnPlateau(monitor="val_score",
                                 verbose=1,
                                 mode='max',
                                 factor=0.5,
-                                patience=20)
+                                patience=30)
     early_stopping = EarlyStopping(monitor='val_acc',
                                    verbose=1,
                                    mode='max',
-                                   patience=30)
-    checkpoint = ModelCheckpoint(f'models/fold{fold}.h5',
-                                 monitor='val_acc',
-                                 verbose=0,
+                                   patience=60)
+    checkpoint = ModelCheckpoint(f'aspp_baseline{fold}.h5',
+                                 monitor='val_score',
+                                 verbose=1,
                                  mode='max',
                                  save_best_only=True)
+    weight_decay=WeightDecayScheduler(init_lr=0.001)
+    model.compile(loss="categorical_crossentropy",optimizer=AdamW(lr=0.001,weight_decay=6e-4),metrics=["acc",score])
+    trained_model=model.fit(
+            x[xx],
+            _y[xx],
+            batch_size=batch_size,
+            class_weight=(1-class_weight)**2,
+            shuffle=True,
+            validation_data=(x[yy],_y[yy]),
+            epochs=800,
+            callbacks=[plateau,early_stopping,checkpoint,weight_decay])
+    model.load_weights(f'aspp_baseline{fold}.h5')
+    proba_t += model.predict(x_val, verbose=0, batch_size=1024)/5.
+    train_score.append(np.array(trained_model.history["score"]).max())
+    test_score.append(np.array(trained_model.history["val_score"]).max())
+label=proba_t.argmax(axis=1)
+print("on_train_set:",np.array(train_score))
+print("average:",np.array(train_score).mean())
+print("on_test_set:",np.array(test_score))
+print("average:",np.array(test_score).mean())
+print("done")
 
-    csv_logger = CSVLogger('logs/log.csv', separator=',', append=True)
-    history = model.fit([train_lstm[train_index],
-                         train_lstm_inv[train_index],
-                         train_features[train_index]],
-                        y_[train_index],
-                        epochs=500,
-                        batch_size=256,
-                        verbose=1,
-                        shuffle=True,
-                        validation_data=([train_lstm[valid_index],
-                                          train_lstm_inv[valid_index],
-                                          train_features[valid_index]],
-                                         y_[valid_index]),
-                        callbacks=[plateau, early_stopping, checkpoint, csv_logger])
-    model.load_weights(f'models/fold{fold}.h5')
-    proba_x = model.predict([train_lstm[valid_index], train_lstm_inv[valid_index], train_features[valid_index]],
-                            verbose=0, batch_size=1024)
-    proba_t += model.predict([test_lstm, test_lstm_inv, test_features], verbose=0, batch_size=1024) / 5.
-
-    oof_y = np.argmax(proba_x, axis=1)
-    score1 = accuracy_score(y[valid_index], oof_y)
-    # print('accuracy_score',score1)
-    score = sum(acc_combo(y_true, y_pred) for y_true, y_pred in zip(y[valid_index], oof_y)) / oof_y.shape[0]
-    print('accuracy_score', score1, 'acc_combo', score)
-    acc_scores.append(score1)
-    combo_scores.append(score)
-
-    # print(history.history.keys())
-    # # summarize history for accuracy
-    # plt.plot(history.history['acc'])
-    # plt.plot(history.history['val_acc'])
-    # plt.title('model accuracy')
-    # plt.ylabel('accuracy')
-    # plt.xlabel('epoch')
-    # plt.legend(['train', 'test'], loc='upper left')
-    # plt.show()
-    # # summarize history for loss
-    # plt.plot(history.history['loss'])
-    # plt.plot(history.history['val_loss'])
-    # plt.title('model loss')
-    # plt.ylabel('loss')
-    # plt.xlabel('epoch')
-    # plt.legend(['train', 'test'], loc='upper left')
-    # plt.show()
-
-print("5kflod mean acc score:{}".format(np.mean(acc_scores)))
-print("5kflod mean combo score:{}".format(np.mean(combo_scores)))
-
-sub = pd.read_csv('data/提交结果示例.csv')
-sub.behavior_id = np.argmax(proba_t, axis=1)
-sub.to_csv('result/sk_acc{}_combo{}.csv'.format(np.mean(acc_scores), np.mean(combo_scores)), index=False)
-pd.DataFrame(proba_t, columns=['pred_{}'.format(i) for i in range(19)]).to_csv(
-    'result/sk_proba_t_{}.csv'.format(np.mean(acc_scores)), index=False)
+import pandas as pd
+frame = pd.DataFrame(proba_t)
+frame.rename(columns={},inplace = True)
+frame.reset_index(inplace = True)
+frame.rename(columns={'index':'fragment_id'},inplace = True)
+frame.to_csv('submit_prob_87.48_99.32.csv',index=False)

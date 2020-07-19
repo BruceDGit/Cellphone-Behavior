@@ -30,7 +30,7 @@ def py_score(y_true, y_pred):
     mean_score = np.array(scores, dtype="float32").mean()
     return mean_score, mean_score
 
-
+@tf.function
 def score(y_true, y_pred):
     """线上评测所使用的评测方法
     Args:
