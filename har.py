@@ -88,6 +88,12 @@ combo_scores = []
 proba_t = np.zeros((7500, 19))
 kfold = StratifiedKFold(5, shuffle=True, random_state=42)
 
+# 类别权重设置
+class_weight = np.array([0.03304992, 0.09270433, 0.05608886, 0.04552935, 0.05965442,
+                         0.04703785, 0.10175535, 0.03236423, 0.0449808, 0.0393582,
+                         0.03236423, 0.06157433, 0.10065826, 0.03990675, 0.01727921,
+                         0.06555129, 0.04731212, 0.03551838, 0.04731212])
+
 for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
     print("{}train {}th fold{}".format('==' * 20, fold + 1, '==' * 20))
     y_ = to_categorical(y, num_classes=19)
@@ -120,6 +126,7 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
                         batch_size=256,
                         verbose=1,
                         shuffle=True,
+                        class_weight=(1 - class_weight) ** 3,
                         validation_data=([train_lstm[valid_index],
                                           train_lstm_inv[valid_index],
                                           train_features[valid_index]],
