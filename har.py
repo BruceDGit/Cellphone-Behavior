@@ -129,12 +129,12 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
     plateau = ReduceLROnPlateau(monitor="val_acc",
                                 verbose=1,
                                 mode='max',
-                                factor=0.5,
+                                factor=0.75,
                                 patience=20)
     early_stopping = EarlyStopping(monitor='val_acc',
                                    verbose=1,
                                    mode='max',
-                                   patience=30)
+                                   patience=40)
     checkpoint = ModelCheckpoint(f'models/fold{fold}.h5',
                                  monitor='val_acc',
                                  verbose=0,
@@ -146,8 +146,8 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
                          train_lstm_inv[train_index],
                          train_features[train_index]],
                         y_[train_index],
-                        epochs=500,
-                        batch_size=256,
+                        epochs=1000,
+                        batch_size=128,
                         verbose=1,
                         shuffle=True,
                         class_weight=(1 - class_weight) ** 3,
