@@ -88,7 +88,6 @@ def Net():
 acc_scores = []
 combo_scores = []
 proba_t = np.zeros((7500, 19))
-kfold = StratifiedKFold(5, shuffle=True, random_state=42)
 
 # 类别权重设置
 class_weight = np.array([0.03304992, 0.09270433, 0.05608886, 0.04552935, 0.05965442,
@@ -96,12 +95,13 @@ class_weight = np.array([0.03304992, 0.09270433, 0.05608886, 0.04552935, 0.05965
                          0.03236423, 0.06157433, 0.10065826, 0.03990675, 0.01727921,
                          0.06555129, 0.04731212, 0.03551838, 0.04731212])
 
-# 单折 10个种子融合
-# 10 seed
+# 单折 5个种子融合
+# 5 seed
 seeds = [19970412, 2019 * 2 + 1024, 4096, 2048, 1024]
 num_model_seed = 5
 for model_seed in range(num_model_seed):
-    print(model_seed + 1)
+    print("{}train {}th fold{}".format('***' * 20, model_seed + 1, '***' * 20))
+    kfold = StratifiedKFold(5, shuffle=True, random_state=seeds[model_seed])
     for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
         print("{}train {}th fold{}".format('==' * 20, fold + 1, '==' * 20))
         y_ = to_categorical(y, num_classes=19)
