@@ -130,7 +130,7 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
                                 verbose=1,
                                 mode='max',
                                 factor=0.75,
-                                patience=20)
+                                patience=15)
     early_stopping = EarlyStopping(monitor='val_acc',
                                    verbose=1,
                                    mode='max',
