@@ -3,7 +3,6 @@ import pandas as pd
 from scipy.signal import resample
 from tensorflow.keras.preprocessing import sequence
 from tqdm import tqdm
-from  augment_data import jitter
 
 data_path = 'data/'
 train = pd.read_csv(data_path + 'sensor_train.csv')
@@ -61,8 +60,6 @@ num_cols = len(use_fea)
 
 
 def load_lstm_inv_data():
-    y_train = train.groupby('fragment_id')['behavior_id'].min()
-    select_index = np.in1d(y_train, [13, 9, 17, 0, 10, 7, 14])
     # =============训练集=================
     train_sequences = list()
 
@@ -95,15 +92,6 @@ def load_lstm_inv_data():
     # final_seq.shape (314, 129, 4)
     print("train_final_seq.shape", train_final_seq.shape)
     # 进行截断
-    with_noise = True
-    if with_noise:
-        # 对类别较少的数据进行数据增强
-        noise_SNR_db = [5, 15]
-        print("添加随机噪声,SNR_db:{}".format(noise_SNR_db))
-        train_noise = jitter(train_final_seq, [5, 15])
-        train_final_seq = np.concatenate([train_final_seq, train_noise[select_index]], axis=0)
-        y_train = np.concatenate([y_train, y_train[select_index]], axis=0)
-    print("train_final_seq.shape", train_final_seq.shape)
 
     seq_len = 60
     train_final_seq = sequence.pad_sequences(train_final_seq, maxlen=seq_len, padding='post',

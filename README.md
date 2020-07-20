@@ -112,6 +112,74 @@ accuracy_score 0.6694101508916324 acc_combo 0.7127833300672791
 ```
 
 `线上分数0.7023650793650793`
+- [LSTM-FCN](https://github.com/titu1994/LSTM-FCN)
+
+论文地址：[LSTM Fully Convolutional Networks for Time Series Classification](https://ieeexplore.ieee.org/document/8141873/)
+![](images/LSTM-FCN.png)
+- [x] 参数1
+```text
+def LSTM_FCN():
+    input = Input(shape=(seq_len, fea_size), name="input_layer")
+    x = LSTM(64)(input)
+    x = Dropout(0.8)(x)
+
+    # y = Permute((2, 1))(input)
+    y = Conv1D(128, 8, padding='same', kernel_initializer='he_uniform')(input)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
+
+    y = Conv1D(256, 5, padding='same', kernel_initializer='he_uniform')(y)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
+
+    y = Conv1D(128, 3, padding='same', kernel_initializer='he_uniform')(y)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
+
+    y = GlobalAveragePooling1D()(y)
+
+    x = concatenate([x, y])
+
+    pred = Dense(19, activation='softmax')(x)
+    model = Model([input], pred)
+    return model
+结果
+accuracy_score 0.7887517146776406 acc_combo 0.8202038016852817
+5kflod mean acc score:0.7870284342677916
+5kflod mean combo score:0.818158419984462
+```
+- [x] 参数2
+```text
+def LSTM_FCN():
+    input = Input(shape=(seq_len, fea_size), name="input_layer")
+    x = LSTM(64)(input)
+    x = Dropout(0.8)(x)
+
+    # y = Permute((2, 1))(input)
+    y = Conv1D(128, 5, padding='same', kernel_initializer='he_uniform')(input)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
+
+    y = Conv1D(256, 4, padding='same', kernel_initializer='he_uniform')(y)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
+
+    y = Conv1D(128, 3, padding='same', kernel_initializer='he_uniform')(y)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
+
+    y = GlobalAveragePooling1D()(y)
+
+    x = concatenate([x, y])
+
+    pred = Dense(19, activation='softmax')(x)
+    model = Model([input], pred)
+    return model
+```
+线下：
+lstm_acc 0.7962136532999378
+combo 0.8261682540488406
+线上.0654
 
 ## Multi Input
 cnn双输入（正向sequences和反向sequences） 可以对应har.py代码，
@@ -127,14 +195,14 @@ cnn双输入（正向sequences和反向sequences） 可以对应har.py代码，
 - CNN中间BN和Dropout稍微有调整，减少一些BN
 - 调整数据补齐：将frame的前20条数据进行填充
 - 5个随机种子 5折：0.788063492063492 模型较稳定
-效果上升比较大，线上0.782+
+- ★根据类别频率统计class weight，加上线上效果0.788666
+- 使用jitter进行数据增强：线下分数较高，线上0.779
 ## 失败的尝试
 - 添加特征
 - lstm：也不算失败，目前网络结构比较简单，个人感觉应该LSTM的效果比CNN要好
 - 超参数调优
 - 加上归一化之后 效果比较差
-- 根据类别频率统计class weight，加上 线上效果0.788666
-- 使用jitter进行数据增强：线下分数较高，线上0.779
+
 ```text
 print('Scaler....')
 for col in ['acc_x','acc_y','acc_z','acc_xg','acc_yg','acc_zg','mod','modg']:

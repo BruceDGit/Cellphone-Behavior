@@ -15,21 +15,30 @@ X, y, X_test, seq_len, fea_size = load_lstm_data()
 sub = pd.read_csv('data/提交结果示例.csv')
 
 
-def Net():
+def LSTM_FCN():
     input = Input(shape=(seq_len, fea_size), name="input_layer")
-    model = GRU(128, return_sequences=True)(input)
-    model = GRU(256, kernel_regularizer=tf.keras.regularizers.l2(0.001))(model)
+    x = LSTM(64)(input)
+    x = Dropout(0.8)(x)
 
-    model = BatchNormalization()(model)
-    model = Dropout(0.2)(model)
-    model = Flatten()(model)
-    model = Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001))(model)
-    model = Dropout(0.2)(model)
-    # model = BatchNormalization(model)
+    # y = Permute((2, 1))(input)
+    y = Conv1D(128, 5, padding='same', kernel_initializer='he_uniform')(input)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
 
-    pred = Dense(19, activation='softmax')(model)
+    y = Conv1D(256, 4, padding='same', kernel_initializer='he_uniform')(y)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
+
+    y = Conv1D(128, 3, padding='same', kernel_initializer='he_uniform')(y)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
+
+    y = GlobalAveragePooling1D()(y)
+
+    x = concatenate([x, y])
+
+    pred = Dense(19, activation='softmax')(x)
     model = Model([input], pred)
-    model.summary()
     return model
 
 
@@ -41,7 +50,7 @@ kfold = StratifiedKFold(5, shuffle=True)
 for fold, (xx, yy) in enumerate(kfold.split(X, y)):
     print("{}train {}th fold{}".format('==' * 20, fold + 1, '==' * 20))
     y_ = to_categorical(y, num_classes=19)
-    model = Net()
+    model = LSTM_FCN()
     model.compile(loss='categorical_crossentropy',
                   optimizer='rmsprop',
                   metrics=['acc'])
@@ -80,7 +89,12 @@ for fold, (xx, yy) in enumerate(kfold.split(X, y)):
     print('accuracy_score', score1, 'acc_combo', score)
     acc_scores.append(score1)
     combo_scores.append(score)
+
+print("acc_scores:",acc_scores)
+print("combo_scores:",combo_scores)
 print("5kflod mean acc score:{}".format(np.mean(acc_scores)))
 print("5kflod mean combo score:{}".format(np.mean(combo_scores)))
 sub.behavior_id = np.argmax(proba_t, axis=1)
 sub.to_csv('result/lstm_acc{}_combo{}.csv'.format(np.mean(acc_scores), np.mean(combo_scores)), index=False)
+
+
