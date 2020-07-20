@@ -191,6 +191,7 @@ combo_scores: [0.842749436992068, 0.8260060706942118, 0.822294075380494, 0.82167
 5kflod mean acc score:0.7931948804591152
 5kflod mean combo score:0.8243448699088012
 ```
+线上：0.761
 ## Multi Input
 cnn双输入（正向sequences和反向sequences） 可以对应har.py代码，
 线上0.7726190476190478
