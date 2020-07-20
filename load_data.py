@@ -9,7 +9,7 @@ from scipy.stats import skew
 from scipy.stats import kurtosis
 from scipy.stats import mode
 import os
-
+from  augment_data import jitter
 data_path = 'data/'
 train = pd.read_csv(data_path + 'sensor_train.csv')
 test = pd.read_csv(data_path + 'sensor_test.csv')
@@ -64,6 +64,9 @@ num_cols = len(use_fea)
 
 
 def load_lstm_data():
+    y_train = train.groupby('fragment_id')['behavior_id'].min()
+    select_index = np.in1d(y_train, [13, 9, 17, 0, 10, 7, 14])
+    print(select_index)
     # =============训练集=================
     train_sequences = list()
 
@@ -92,7 +95,18 @@ def load_lstm_data():
         train_new_seq.append(new_one_seq)
 
     train_final_seq = np.stack(train_new_seq)
-    # final_seq.shape (314, 129, 4)
+    with_noise=True
+    if with_noise:
+        # 对类别较少的数据进行数据增强
+        noise_SNR_db=[5,15]
+        print("添加随机噪声,SNR_db:{}".format(noise_SNR_db))
+        train_noise = jitter(train_final_seq, [5,15])
+        print(select_index)
+        print(train_noise[select_index].shape)
+        print(train_final_seq.shape)
+
+        train_final_seq=np.concatenate([train_final_seq,train_noise[select_index]],axis=0)
+        y_train=np.concatenate([y_train,y_train[select_index]],axis=0)
     print("train_final_seq.shape", train_final_seq.shape)
     # 进行截断
 
@@ -152,6 +166,8 @@ def load_cnn_data():
 
 
 def load_features_data(feature_id=1):
+    y_train = train.groupby('fragment_id')['behavior_id'].min()
+    select_index = np.in1d(y_train, [13, 9, 17, 0, 10, 7, 14])
     if feature_id == 1:
         if not os.path.exists('data/df_train_test_features.csv'):
             data_path = 'data/'
@@ -297,6 +313,7 @@ def load_features_data(feature_id=1):
         print(used_feat)
 
         train_x = train_df[used_feat].values
+        train_x=np.concatenate([train_x,train_x[select_index]],axis=0)
         train_y = train_df[label].values
         test_x = test_df[used_feat].values
 
@@ -307,4 +324,4 @@ def load_y():
     return y_train
 
 
-# train_lstm, y1, test_lstm, seq_len, _ = load_lstm_data()
+train_lstm, y1, test_lstm, seq_len, _ = load_lstm_data()
