@@ -134,6 +134,7 @@ cnn双输入（正向sequences和反向sequences） 可以对应har.py代码，
 - 超参数调优
 - 加上归一化之后 效果比较差
 - 根据类别频率统计class weight，加上 线上效果0.788666
+- 使用jitter进行数据增强：线下分数较高，线上0.779
 ```text
 print('Scaler....')
 for col in ['acc_x','acc_y','acc_z','acc_xg','acc_yg','acc_zg','mod','modg']:
