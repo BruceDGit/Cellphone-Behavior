@@ -23,11 +23,8 @@ train_features, _, test_features = load_features_data(feature_id=2)
 
 train_lstm, y1, test_lstm, seq_len, _ = load_lstm_data()
 train_lstm_inv, _, test_lstm_inv, _, _ = load_lstm_inv_data()
-y = y1
-# from sklearn.utils import class_weight
-# class_weights = class_weight.compute_class_weight('balanced',
-#                                                  np.unique(y1),
-#                                                  y1)
+y = load_y()
+
 
 def multi_conv2d(input_forward):
     input = Reshape((60, train_lstm.shape[2], 1), input_shape=(60, train_lstm.shape[2]))(input_forward)
@@ -62,6 +59,29 @@ def multi_conv2d(input_forward):
     return X
 
 
+def lstm_fcn(input):
+    x = LSTM(64)(input)
+    x = Dropout(0.8)(x)
+
+    # y = Permute((2, 1))(input)
+    y = Conv1D(128, 5, padding='same', kernel_initializer='he_uniform')(input)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
+
+    y = Conv1D(256, 4, padding='same', kernel_initializer='he_uniform')(y)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
+
+    y = Conv1D(128, 3, padding='same', kernel_initializer='he_uniform')(y)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
+
+    y = GlobalAveragePooling1D()(y)
+
+    x = concatenate([x, y])
+    return x
+
+
 def Net():
     input_forward = Input(shape=(60, train_lstm.shape[2]))
     input_backward = Input(shape=(60, train_lstm.shape[2]))
@@ -79,8 +99,9 @@ def Net():
     dense = Dense(256, activation='relu')(dense)
     dense = BatchNormalization()(dense)
 
-    output = Concatenate(axis=-1)([X_forward, X_backward, dense])
-    output = BatchNormalization()(Dropout(0.2)(Dense(640, activation='relu')(Flatten()(output))))
+    lstm = lstm_fcn(input_forward)
+    output = Concatenate(axis=-1)([X_forward, X_backward, dense, lstm])
+    output = BatchNormalization()(Dropout(0.2)(Dense(512, activation='relu')(Flatten()(output))))
 
     output = Dense(19, activation='softmax')(output)
     return Model([input_forward, input_backward, feainput], output)
@@ -120,7 +141,7 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
                                  mode='max',
                                  save_best_only=True)
 
-    csv_logger = CSVLogger('logs/log.csv', separator=',', append=False)
+    csv_logger = CSVLogger('logs/log.csv', separator=',', append=True)
     history = model.fit([train_lstm[train_index],
                          train_lstm_inv[train_index],
                          train_features[train_index]],
@@ -129,7 +150,7 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
                         batch_size=256,
                         verbose=1,
                         shuffle=True,
-                        class_weight=dict(enumerate((1 - class_weight) ** 3)),
+                        class_weight=(1 - class_weight) ** 3,
                         validation_data=([train_lstm[valid_index],
                                           train_lstm_inv[valid_index],
                                           train_features[valid_index]],
@@ -165,7 +186,8 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
     # plt.xlabel('epoch')
     # plt.legend(['train', 'test'], loc='upper left')
     # plt.show()
-
+print("acc_scores:",acc_scores)
+print("combo_scores:",combo_scores)
 print("5kflod mean acc score:{}".format(np.mean(acc_scores)))
 print("5kflod mean combo score:{}".format(np.mean(combo_scores)))
 
