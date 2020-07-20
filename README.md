@@ -179,8 +179,18 @@ def LSTM_FCN():
 线下：
 lstm_acc 0.7962136532999378
 combo 0.8261682540488406
-线上.0654
+线上0.754 代码对应为[lstm.py](lstm.py)
 
+
+- [MLSTM-FCN](https://github.com/titu1994/MLSTM-FCN)
+代码：[mlstm_fcn.py](mlstm_fcn.py)
+```text
+accuracy_score 0.7764060356652949 acc_combo 0.8090012411000044
+acc_scores: [0.8163125428375599, 0.7930089102124743, 0.7908093278463649, 0.789437585733882, 0.7764060356652949]
+combo_scores: [0.842749436992068, 0.8260060706942118, 0.822294075380494, 0.8216735253772278, 0.8090012411000044]
+5kflod mean acc score:0.7931948804591152
+5kflod mean combo score:0.8243448699088012
+```
 ## Multi Input
 cnn双输入（正向sequences和反向sequences） 可以对应har.py代码，
 线上0.7726190476190478
