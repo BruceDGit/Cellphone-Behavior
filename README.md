@@ -179,8 +179,8 @@ def LSTM_FCN():
 线下：
 lstm_acc 0.7962136532999378
 combo 0.8261682540488406
-线上0.754 代码对应为[lstm.py](lstm.py)
-
+- 线上0.754 代码对应为[lstm.py](lstm.py)
+- 加入class weight引起过拟合
 
 - [MLSTM-FCN](https://github.com/titu1994/MLSTM-FCN)
 代码：[mlstm_fcn.py](mlstm_fcn.py)
@@ -208,6 +208,7 @@ cnn双输入（正向sequences和反向sequences） 可以对应har.py代码，
 - 5个随机种子 5折：0.788063492063492 模型较稳定
 - ★根据类别频率统计class weight，加上线上效果0.788666
 - 使用jitter进行数据增强：线下分数较高，线上0.779
+- 加入LSTM-FCN之后，0.781
 ## 失败的尝试
 - 添加特征
 - lstm：也不算失败，目前网络结构比较简单，个人感觉应该LSTM的效果比CNN要好
