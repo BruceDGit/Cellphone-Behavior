@@ -59,29 +59,6 @@ def multi_conv2d(input_forward):
     return X
 
 
-def lstm_fcn(input):
-    x = LSTM(64)(input)
-    x = Dropout(0.8)(x)
-
-    # y = Permute((2, 1))(input)
-    y = Conv1D(128, 5, padding='same', kernel_initializer='he_uniform')(input)
-    y = BatchNormalization()(y)
-    y = Activation('relu')(y)
-
-    y = Conv1D(256, 4, padding='same', kernel_initializer='he_uniform')(y)
-    y = BatchNormalization()(y)
-    y = Activation('relu')(y)
-
-    y = Conv1D(128, 3, padding='same', kernel_initializer='he_uniform')(y)
-    y = BatchNormalization()(y)
-    y = Activation('relu')(y)
-
-    y = GlobalAveragePooling1D()(y)
-
-    x = concatenate([x, y])
-    return x
-
-
 def Net():
     input_forward = Input(shape=(60, train_lstm.shape[2]))
     input_backward = Input(shape=(60, train_lstm.shape[2]))
@@ -99,9 +76,8 @@ def Net():
     dense = Dense(256, activation='relu')(dense)
     dense = BatchNormalization()(dense)
 
-    lstm = lstm_fcn(input_forward)
-    output = Concatenate(axis=-1)([X_forward, X_backward, dense, lstm])
-    output = BatchNormalization()(Dropout(0.2)(Dense(512, activation='relu')(Flatten()(output))))
+    output = Concatenate(axis=-1)([X_forward, X_backward, dense])
+    output = BatchNormalization()(Dropout(0.2)(Dense(640, activation='relu')(Flatten()(output))))
 
     output = Dense(19, activation='softmax')(output)
     return Model([input_forward, input_backward, feainput], output)
@@ -129,12 +105,12 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
     plateau = ReduceLROnPlateau(monitor="val_acc",
                                 verbose=1,
                                 mode='max',
-                                factor=0.75,
-                                patience=15)
+                                factor=0.5,
+                                patience=20)
     early_stopping = EarlyStopping(monitor='val_acc',
                                    verbose=1,
                                    mode='max',
-                                   patience=40)
+                                   patience=30)
     checkpoint = ModelCheckpoint(f'models/fold{fold}.h5',
                                  monitor='val_acc',
                                  verbose=0,
@@ -146,8 +122,8 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
                          train_lstm_inv[train_index],
                          train_features[train_index]],
                         y_[train_index],
-                        epochs=1000,
-                        batch_size=128,
+                        epochs=500,
+                        batch_size=256,
                         verbose=1,
                         shuffle=True,
                         class_weight=(1 - class_weight) ** 3,
