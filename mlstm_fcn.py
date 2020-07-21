@@ -10,7 +10,7 @@ import numpy as np
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import StratifiedKFold
 from keras.utils import to_categorical
-from keras.callbacks import   *
+from keras.callbacks import *
 from keras.models import Model
 from keras.layers import Input, Dense, LSTM, multiply, concatenate, Activation, Masking, Reshape
 from keras.layers import Conv1D, BatchNormalization, GlobalAveragePooling1D, Permute, Dropout
@@ -250,4 +250,6 @@ print("combo_scores:", combo_scores)
 print("5kflod mean acc score:{}".format(np.mean(acc_scores)))
 print("5kflod mean combo score:{}".format(np.mean(combo_scores)))
 sub.behavior_id = np.argmax(proba_t, axis=1)
-sub.to_csv('result/lstm_acc{}_combo{}.csv'.format(np.mean(acc_scores), np.mean(combo_scores)), index=False)
+sub.to_csv('result/mlstm_fcn_acc{}_combo{}.csv'.format(np.mean(acc_scores), np.mean(combo_scores)), index=False)
+pd.DataFrame(proba_t, columns=['pred_{}'.format(i) for i in range(19)]).to_csv(
+    'result/mlstm_fcn_proba_t_{}.csv'.format(np.mean(acc_scores)), index=False)
