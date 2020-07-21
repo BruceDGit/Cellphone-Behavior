@@ -19,6 +19,8 @@ from load_data import *
 from load_inv_data import *
 from utils import *
 
+from circle_loss import CircleLoss
+
 train_features, _, test_features = load_features_data(feature_id=2)
 
 train_lstm, y1, test_lstm, seq_len, _ = load_lstm_data()
@@ -98,9 +100,10 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
     print("{}train {}th fold{}".format('==' * 20, fold + 1, '==' * 20))
     y_ = to_categorical(y, num_classes=19)
     model = Net()
-    model.compile(loss='categorical_crossentropy',
-                  optimizer='rmsprop',
-                  metrics=['acc'])
+    model.compile(
+        loss=CircleLoss(gamma=64, margin=0.25),
+        optimizer='rmsprop',
+        metrics=['acc'])
     model.summary()
     plateau = ReduceLROnPlateau(monitor="val_acc",
                                 verbose=1,
@@ -162,8 +165,8 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
     # plt.xlabel('epoch')
     # plt.legend(['train', 'test'], loc='upper left')
     # plt.show()
-print("acc_scores:",acc_scores)
-print("combo_scores:",combo_scores)
+print("acc_scores:", acc_scores)
+print("combo_scores:", combo_scores)
 print("5kflod mean acc score:{}".format(np.mean(acc_scores)))
 print("5kflod mean combo score:{}".format(np.mean(combo_scores)))
 
