@@ -8,11 +8,10 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import StratifiedKFold
 from tensorflow.keras.layers import *
 
-from load_data import load_features_data, load_y
+from create_features import get_feat
 from utils import acc_combo
 
-train_features, _, test_features = load_features_data(feature_id=2)
-y = load_y()
+train_features, y, test_features = get_feat()
 
 
 def Net():
@@ -71,7 +70,7 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_features, y)
                         callbacks=[plateau, early_stopping, checkpoint, csv_logger])
     model.load_weights(f'models/fold{fold}.h5')
     proba_x = model.predict(train_features[valid_index], verbose=0, batch_size=1024)
-    proba_x_full+=model.predict(train_features, verbose=0, batch_size=1024) / 5.
+    proba_x_full += model.predict(train_features, verbose=0, batch_size=1024) / 5.
     proba_t += model.predict(test_features, verbose=0, batch_size=1024) / 5.
 
     oof_y = np.argmax(proba_x, axis=1)

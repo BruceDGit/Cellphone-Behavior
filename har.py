@@ -19,8 +19,6 @@ from load_data import *
 from load_inv_data import *
 from utils import *
 
-from circle_loss import CircleLoss
-
 train_features, _, test_features = load_features_data(feature_id=2)
 
 train_lstm, y1, test_lstm, seq_len, _ = load_lstm_data()
@@ -101,7 +99,7 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
     y_ = to_categorical(y, num_classes=19)
     model = Net()
     model.compile(
-        loss=CircleLoss(gamma=64, margin=0.25),
+        loss='categorical_crossentropy',
         optimizer='rmsprop',
         metrics=['acc'])
     model.summary()
