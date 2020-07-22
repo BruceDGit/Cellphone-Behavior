@@ -1,9 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from keras.models import Model
-from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau, CSVLogger
-from keras.utils import to_categorical
+from tensorflow.keras.models import Model
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau, CSVLogger
+from tensorflow.keras.utils import to_categorical
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import StratifiedKFold
 from tensorflow.keras.layers import *

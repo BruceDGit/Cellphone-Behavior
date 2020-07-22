@@ -288,9 +288,6 @@ def load_features_data(feature_id=1):
         train_df = df[df[label].isna() == False].reset_index(drop=True)
         test_df = df[df[label].isna() == True].reset_index(drop=True)
 
-        train_df = df[df[label].isna() == False].reset_index(drop=True)
-        test_df = df[df[label].isna() == True].reset_index(drop=True)
-
         drop_feat = []
         used_feat = [f for f in train_df.columns if f not in (['fragment_id', label] + drop_feat)]
         print(len(used_feat))
