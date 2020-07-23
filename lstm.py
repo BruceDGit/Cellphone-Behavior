@@ -16,19 +16,20 @@ sub = pd.read_csv('data/提交结果示例.csv')
 
 
 def LSTM_FCN():
+    input = Input(shape=(seq_len, fea_size), name="input_layer")
     x = LSTM(64)(input)
     x = Dropout(0.8)(x)
 
     # y = Permute((2, 1))(input)
-    y = Conv1D(128, 8, padding='same', kernel_initializer='he_uniform')(input)
+    y = Conv1D(256, 8, padding='same', kernel_initializer='he_uniform')(input)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
+
+    y = Conv1D(512, 6, padding='same', kernel_initializer='he_uniform')(y)
     y = BatchNormalization()(y)
     y = Activation('relu')(y)
 
     y = Conv1D(256, 4, padding='same', kernel_initializer='he_uniform')(y)
-    y = BatchNormalization()(y)
-    y = Activation('relu')(y)
-
-    y = Conv1D(128, 2, padding='same', kernel_initializer='he_uniform')(y)
     y = BatchNormalization()(y)
     y = Activation('relu')(y)
 
@@ -58,11 +59,11 @@ for fold, (xx, yy) in enumerate(kfold.split(X, y)):
                                 verbose=1,
                                 mode='max',
                                 factor=0.5,
-                                patience=10)
+                                patience=20)
     early_stopping = EarlyStopping(monitor='val_acc',
                                    verbose=1,
                                    mode='max',
-                                   patience=20)
+                                   patience=30)
     checkpoint = ModelCheckpoint(f'models/fold{fold}.h5',
                                  monitor='val_acc',
                                  verbose=0,
