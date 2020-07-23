@@ -16,12 +16,11 @@ sub = pd.read_csv('data/提交结果示例.csv')
 
 
 def LSTM_FCN():
-    input = Input(shape=(seq_len, fea_size), name="input_layer")
     x = LSTM(64)(input)
     x = Dropout(0.8)(x)
 
     # y = Permute((2, 1))(input)
-    y = Conv1D(128, 5, padding='same', kernel_initializer='he_uniform')(input)
+    y = Conv1D(128, 8, padding='same', kernel_initializer='he_uniform')(input)
     y = BatchNormalization()(y)
     y = Activation('relu')(y)
 
@@ -29,7 +28,7 @@ def LSTM_FCN():
     y = BatchNormalization()(y)
     y = Activation('relu')(y)
 
-    y = Conv1D(128, 3, padding='same', kernel_initializer='he_uniform')(y)
+    y = Conv1D(128, 2, padding='same', kernel_initializer='he_uniform')(y)
     y = BatchNormalization()(y)
     y = Activation('relu')(y)
 
@@ -96,5 +95,7 @@ print("5kflod mean acc score:{}".format(np.mean(acc_scores)))
 print("5kflod mean combo score:{}".format(np.mean(combo_scores)))
 sub.behavior_id = np.argmax(proba_t, axis=1)
 sub.to_csv('result/lstm_acc{}_combo{}.csv'.format(np.mean(acc_scores), np.mean(combo_scores)), index=False)
+pd.DataFrame(proba_t, columns=['pred_{}'.format(i) for i in range(19)]).to_csv(
+    'result/lstm_proba_t_{}.csv'.format(np.mean(acc_scores)), index=False)
 
 

@@ -102,7 +102,7 @@ accuracy_score 0.7949245541838135 acc_combo 0.8232738911751242
 `GlobalAveragePooling2D 线上分数0.7686349206349207`优于 GlobalMaxPooling2D
 
 ## LSTM
-- 双向的LSTM
+1. 双向的LSTM
 ```text
 23/23 - 1s - loss: 0.1118 - acc: 0.9609 - val_loss: 1.7949 - val_acc: 0.6543 - lr: 1.2500e-04
 Epoch 00104: early stopping
@@ -112,7 +112,7 @@ accuracy_score 0.6694101508916324 acc_combo 0.7127833300672791
 ```
 
 `线上分数0.7023650793650793`
-- [LSTM-FCN](https://github.com/titu1994/LSTM-FCN)
+2. [LSTM-FCN](https://github.com/titu1994/LSTM-FCN)
 
 论文地址：[LSTM Fully Convolutional Networks for Time Series Classification](https://ieeexplore.ieee.org/document/8141873/)
 ![](images/LSTM-FCN.png)
@@ -182,7 +182,7 @@ combo 0.8261682540488406
 - 线上0.754 代码对应为[lstm.py](lstm.py)
 - 加入class weight引起过拟合
 
-- [MLSTM-FCN](https://github.com/titu1994/MLSTM-FCN)
+3. [MLSTM-FCN](https://github.com/titu1994/MLSTM-FCN)
 代码：[mlstm_fcn.py](mlstm_fcn.py)
 - 原始`generate_model`
 ```text
@@ -202,7 +202,11 @@ combo_scores: [0.8394203466170552, 0.8462090799308052, 0.8495656149977121, 0.850
 5kflod mean acc score:0.8185691949406314
 5kflod mean combo score:0.8457547964076181
 ```
-线上
+线上0.776
+
+4. [EMN](https://github.com/qianlima-lab/EMN)
+Time series classification with Echo Memory Networks
+
 ## Multi Input
 cnn双输入（正向sequences和反向sequences） 可以对应har.py代码，
 线上0.7726190476190478
