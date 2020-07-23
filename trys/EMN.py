@@ -1,44 +1,53 @@
+# -*- coding: utf-8 -*-
+"""
+# https://github.com/qianlima-lab/EMN/blob/master/echo_memory_network_demo.py
+@author: quincyqiang
+@software: PyCharm
+@file: EMN.py
+@time: 2020/7/23 22:58
+"""
 import numpy as np
 import pandas as pd
-import tensorflow as tf
-from tensorflow.keras import Model
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau, CSVLogger
-from tensorflow.keras.utils import to_categorical
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import StratifiedKFold
+from tensorflow.keras import Model
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau, CSVLogger
 from tensorflow.keras.layers import *
+from tensorflow.keras.utils import to_categorical
 
 from load_data import load_lstm_data
 from utils import acc_combo
 
 X, y, X_test, seq_len, fea_size = load_lstm_data()
-sub = pd.read_csv('data/提交结果示例.csv')
+sub = pd.read_csv('../data/提交结果示例.csv')
+
+ratio = [0.6, 0.7]
+nb_row = [np.int(ratio[0] * fea_size), np.int(ratio[1] * fea_size)]
+filters = [64,128, 256,512]
 
 
 def LSTM_FCN():
     input = Input(shape=(seq_len, fea_size), name="input_layer")
-    x = LSTM(64)(input)
-    x = Dropout(0.8)(x)
+    inputx = Reshape((60, X.shape[2], 1), input_shape=(60, X.shape[2]))(input)
 
-    # y = Permute((2, 1))(input)
-    y = Conv1D(512, 8, padding='same', kernel_initializer='he_uniform')(input)
-    y = BatchNormalization()(y)
-    y = Activation('relu')(y)
-
-    y = Conv1D(256, 6, padding='same', kernel_initializer='he_uniform')(y)
-    y = BatchNormalization()(y)
-    y = Activation('relu')(y)
-
-    y = Conv1D(128, 4, padding='same', kernel_initializer='he_uniform')(y)
-    y = BatchNormalization()(y)
-    y = Activation('relu')(y)
-
-    y = GlobalAveragePooling1D()(y)
-
-    x = concatenate([x, y])
-
-    pred = Dense(19, activation='softmax')(x)
-    model = Model([input], pred)
+    convs = []
+    for j in range(len(filters)):
+        conv = Conv2D(filters[j], (3,8),
+                      kernel_initializer='he_uniform',
+                      activation='relu',
+                      padding='same',
+                      strides=(1, 1),
+                      data_format='channels_first',
+                      name='conv_{}'.format(j),
+                      )(inputx)
+        conv = GlobalMaxPooling2D(data_format='channels_first')(conv)
+        convs.append(conv)
+    body_feature = concatenate(convs, name='concat_layer')
+    body_feature = Dropout(0.25)(body_feature)
+    dense = Dense(256, activation='relu')(body_feature)
+    dense = BatchNormalization()(dense)
+    output = Dense(19, activation='softmax')(dense)
+    model = Model([input], output, name='EMN')
     return model
 
 
@@ -70,7 +79,7 @@ for fold, (xx, yy) in enumerate(kfold.split(X, y)):
                                  mode='max',
                                  save_best_only=True)
 
-    csv_logger = CSVLogger('logs/log.csv', separator=',', append=True)
+    csv_logger = CSVLogger('../logs/log.csv', separator=',', append=True)
     model.fit(X[xx], y_[xx],
               epochs=500,
               batch_size=256,
@@ -90,13 +99,11 @@ for fold, (xx, yy) in enumerate(kfold.split(X, y)):
     acc_scores.append(score1)
     combo_scores.append(score)
 
-print("acc_scores:",acc_scores)
-print("combo_scores:",combo_scores)
+print("acc_scores:", acc_scores)
+print("combo_scores:", combo_scores)
 print("5kflod mean acc score:{}".format(np.mean(acc_scores)))
 print("5kflod mean combo score:{}".format(np.mean(combo_scores)))
 sub.behavior_id = np.argmax(proba_t, axis=1)
-sub.to_csv('result/lstm_acc{}_combo{}.csv'.format(np.mean(acc_scores), np.mean(combo_scores)), index=False)
+sub.to_csv('result/emn_acc{}_combo{}.csv'.format(np.mean(acc_scores), np.mean(combo_scores)), index=False)
 pd.DataFrame(proba_t, columns=['pred_{}'.format(i) for i in range(19)]).to_csv(
-    'result/lstm_proba_t_{}.csv'.format(np.mean(acc_scores)), index=False)
-
-
+    'result/emn_proba_t_{}.csv'.format(np.mean(acc_scores)), index=False)
