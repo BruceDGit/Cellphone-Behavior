@@ -204,8 +204,6 @@ combo_scores: [0.8394203466170552, 0.8462090799308052, 0.8495656149977121, 0.850
 ```
 线上0.776
 
-4. [EMN](https://github.com/qianlima-lab/EMN)
-Time series classification with Echo Memory Networks
 
 ## Multi Input
 cnn双输入（正向sequences和反向sequences） 可以对应har.py代码，
@@ -319,6 +317,11 @@ feainput = Input(shape=(w2v_fea))
 
 - Disout
 和Dropout类似，线下效果相比dropout差，线上0.787，另外收敛时间比较慢
+
+-  [EMN](https://github.com/qianlima-lab/EMN)
+Time series classification with Echo Memory Networks
+线下：0.444+ 可能因为和原论文实现差别太大的原因。。
+
 ## 参考资料
 - [HAR](https://github.com/search?q=HAR+cnn)
 - [HAR-WISDM_ar](https://github.com/coloriz/HAR-WISDM_ar)
