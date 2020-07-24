@@ -321,7 +321,8 @@ feainput = Input(shape=(w2v_fea))
 -  [EMN](https://github.com/qianlima-lab/EMN)
 Time series classification with Echo Memory Networks
 线下：0.444+ 可能因为和原论文实现差别太大的原因。。
-
+- [MultiVariateCNN](https://github.com/salmansust/TimeSeries-CNN)
+每个变量单做一个输入
 ## 参考资料
 - [HAR](https://github.com/search?q=HAR+cnn)
 - [HAR-WISDM_ar](https://github.com/coloriz/HAR-WISDM_ar)
