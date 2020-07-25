@@ -44,6 +44,7 @@ def LSTM_FCN():
 
 acc_scores = []
 combo_scores = []
+final_x = np.zeros((7292, 19))
 proba_t = np.zeros((7500, 19))
 kfold = StratifiedKFold(5, shuffle=True)
 
@@ -65,11 +66,11 @@ for fold, (xx, yy) in enumerate(kfold.split(X, y)):
                                 verbose=1,
                                 mode='max',
                                 factor=0.5,
-                                patience=20)
+                                patience=15)
     early_stopping = EarlyStopping(monitor='val_acc',
                                    verbose=1,
                                    mode='max',
-                                   patience=30)
+                                   patience=50)
     checkpoint = ModelCheckpoint(f'models/fold{fold}.h5',
                                  monitor='val_acc',
                                  verbose=0,
@@ -88,7 +89,7 @@ for fold, (xx, yy) in enumerate(kfold.split(X, y)):
     model.load_weights(f'models/fold{fold}.h5')
     proba_x = model.predict(X[yy], verbose=0, batch_size=1024)
     proba_t += model.predict(X_test, verbose=0, batch_size=1024) / 5.
-
+    final_x[yy] += proba_x
     oof_y = np.argmax(proba_x, axis=1)
     score1 = accuracy_score(y[yy], oof_y)
     # print('accuracy_score',score1)
@@ -97,13 +98,13 @@ for fold, (xx, yy) in enumerate(kfold.split(X, y)):
     acc_scores.append(score1)
     combo_scores.append(score)
 
-print("acc_scores:",acc_scores)
-print("combo_scores:",combo_scores)
+print("acc_scores:", acc_scores)
+print("combo_scores:", combo_scores)
 print("5kflod mean acc score:{}".format(np.mean(acc_scores)))
 print("5kflod mean combo score:{}".format(np.mean(combo_scores)))
 sub.behavior_id = np.argmax(proba_t, axis=1)
 sub.to_csv('result/lstm_acc{}_combo{}.csv'.format(np.mean(acc_scores), np.mean(combo_scores)), index=False)
 pd.DataFrame(proba_t, columns=['pred_{}'.format(i) for i in range(19)]).to_csv(
-    'result/lstm_proba_t_{}.csv'.format(np.mean(acc_scores)), index=False)
-
-
+    'result/lstm_fcn_proba_t_{}.csv'.format(np.mean(acc_scores)), index=False)
+pd.DataFrame(final_x, columns=['pred_{}'.format(i) for i in range(19)]).to_csv(
+    'result/lstm_fcn_proba_x_{}.csv'.format(np.mean(acc_scores)), index=False)
