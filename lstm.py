@@ -7,7 +7,7 @@ from tensorflow.keras.utils import to_categorical
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import StratifiedKFold
 from tensorflow.keras.layers import *
-
+from custom_layer import ASPP
 from load_data import load_lstm_data
 from utils import acc_combo
 
@@ -29,16 +29,78 @@ def LSTM_FCN():
     y = BatchNormalization()(y)
     y = Activation('relu')(y)
 
-    y = Conv1D(128, 4, padding='same', kernel_initializer='he_uniform')(y)
+    y = Conv1D(512, 4, padding='same', kernel_initializer='he_uniform')(y)
     y = BatchNormalization()(y)
     y = Activation('relu')(y)
+    y = ASPP(256, 3, activation=tf.nn.relu)(y)
 
     y = GlobalAveragePooling1D()(y)
-
     x = concatenate([x, y])
 
     pred = Dense(19, activation='softmax')(x)
     model = Model([input], pred)
+    return model
+
+
+def LSTM_FCN_v2():
+    input = Input(shape=(seq_len, fea_size), name="input_layer")
+    x = LSTM(64)(input)
+    x = Dropout(0.8)(x)
+
+    # y = Permute((2, 1))(input)
+    y = Conv1D(512, 8, padding='same', kernel_initializer='he_uniform')(input)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
+
+    y = Conv1D(256, 6, padding='same', kernel_initializer='he_uniform')(y)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
+
+    y = Conv1D(512, 4, padding='same', kernel_initializer='he_uniform')(y)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
+    y = ASPP(256, 3, activation=tf.nn.relu)(y)
+
+    y = GlobalAveragePooling1D()(y)
+    x = concatenate([x, y])
+
+    pred = Dense(19, activation='softmax')(x)
+    model = Model([input], pred)
+    return model
+
+
+def base_boock(input):
+    x = LSTM(64)(input)
+    x = Dropout(0.8)(x)
+
+    # y = Permute((2, 1))(input)
+    y = Conv1D(512, 8, padding='same', kernel_initializer='he_uniform')(input)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
+
+    y = Conv1D(256, 6, padding='same', kernel_initializer='he_uniform')(y)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
+
+    y = Conv1D(512, 4, padding='same', kernel_initializer='he_uniform')(y)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
+    y = ASPP(256, 3, activation=tf.nn.relu)(y)
+
+    y = GlobalAveragePooling1D()(y)
+    x = concatenate([x, y])
+    return x
+
+
+def LSTM_FCN_v3():
+    input_forward = Input(shape=(60, X.shape[2]))
+    input_backward = Input(shape=(60, X.shape[2]))
+    lstm_forward = base_boock(input_forward)
+    lstm_backward = base_boock(input_backward)
+    output = Concatenate(axis=-1)([lstm_forward, lstm_backward])
+    output = BatchNormalization()(Dropout(0.2)(Dense(256, activation='relu')(Flatten()(output))))
+    pred = Dense(19, activation='softmax')(output)
+    model = Model([input_forward, input_backward], pred)
     return model
 
 
