@@ -31,12 +31,12 @@ def build_resnet(input_shape, n_feature_maps, nb_classes):
     x = Reshape((60, train_lstm.shape[2], 1), input_shape=(60, train_lstm.shape[2]))(input)
 
     conv_x = keras.layers.BatchNormalization()(x)
-    conv_x = keras.layers.Conv2D(n_feature_maps, 8, 1, padding='same')(conv_x)
+    conv_x = keras.layers.Conv2D(n_feature_maps, 3, 1, padding='same')(conv_x)
     conv_x = keras.layers.BatchNormalization()(conv_x)
     conv_x = keras.layers.Activation('relu')(conv_x)
 
     print('build conv_y')
-    conv_y = keras.layers.Conv2D(n_feature_maps, 5, 1, padding='same')(conv_x)
+    conv_y = keras.layers.Conv2D(n_feature_maps, 3, 1, padding='same')(conv_x)
     conv_y = keras.layers.BatchNormalization()(conv_y)
     conv_y = keras.layers.Activation('relu')(conv_y)
 

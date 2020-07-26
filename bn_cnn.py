@@ -1,8 +1,8 @@
 from scipy.signal import resample
-import tensorflow as tf
+import pandas as pd
 import numpy as np
 import pandas as pd
-from keras.models import Model
+from keras import Model
 from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from keras.utils import to_categorical
 from scipy.signal import resample
@@ -13,9 +13,6 @@ from tqdm import tqdm
 from utils import acc_combo
 
 train = pd.read_csv('data/sensor_train.csv')
-train_inv=train.sort_values(by=['fragment_id', 'time_point'], ascending=[True, False])
-train_inv['fragment_id']=train_inv['fragment_id']+7292
-train = pd.concat([train,train_inv],axis=0)
 test = pd.read_csv('data/sensor_test.csv')
 train_size = len(train)
 
@@ -29,9 +26,9 @@ train['modg'] = (train.acc_xg ** 2 + train.acc_yg ** 2 + train.acc_zg ** 2) ** .
 test['mod'] = (test.acc_x ** 2 + test.acc_y ** 2 + test.acc_z ** 2) ** .5
 test['modg'] = (test.acc_xg ** 2 + test.acc_yg ** 2 + test.acc_zg ** 2) ** .5
 
-x = np.zeros((7292*2, 60, 8, 1))
+x = np.zeros((7292, 60, 8, 1))
 t = np.zeros((7500, 60, 8, 1))
-for i in tqdm(range(7292*2)):
+for i in tqdm(range(7292)):
     tmp = train[train.fragment_id == i][:60]
     x[i, :, :, 0] = resample(tmp.drop(['fragment_id', 'time_point', 'behavior_id'],
                                       axis=1), 60, np.array(tmp.time_point))[0]
@@ -79,6 +76,7 @@ def Net():
 
 acc_scores = []
 combo_scores = []
+final_x = np.zeros((7292, 19))
 proba_t = np.zeros((7500, 19))
 for fold, (xx, yy) in enumerate(kfold.split(x, y)):
     print("{}train {}th fold{}".format('==' * 20, fold + 1, '==' * 20))
@@ -113,6 +111,7 @@ for fold, (xx, yy) in enumerate(kfold.split(x, y)):
 
     proba_x = model.predict(x[yy], verbose=0, batch_size=1024)
     proba_t += model.predict(t, verbose=0, batch_size=1024) / 5.
+    final_x[yy] += proba_x
 
     oof_y = np.argmax(proba_x, axis=1)
     score1 = accuracy_score(y[yy], oof_y)
@@ -125,3 +124,7 @@ print("5kflod mean acc score:{}".format(np.mean(acc_scores)))
 print("5kflod mean combo score:{}".format(np.mean(combo_scores)))
 sub.behavior_id = np.argmax(proba_t, axis=1)
 sub.to_csv('result/cnn_acc{}_combo{}.csv'.format(np.mean(acc_scores), np.mean(combo_scores)), index=False)
+pd.DataFrame(proba_t, columns=['pred_{}'.format(i) for i in range(19)]).to_csv(
+    'result/cnn_proba_t_{}.csv'.format(np.mean(acc_scores)), index=False)
+pd.DataFrame(final_x, columns=['pred_{}'.format(i) for i in range(19)]).to_csv(
+    'result/cnn_proba_x_{}.csv'.format(np.mean(acc_scores)), index=False)

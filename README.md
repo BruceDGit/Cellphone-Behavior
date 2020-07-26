@@ -222,6 +222,15 @@ cnn双输入（正向sequences和反向sequences） 可以对应har.py代码，
 - ★根据类别频率统计class weight，加上线上效果0.788666
 - 使用jitter进行数据增强：线下分数较高，线上0.779
 - 加入LSTM-FCN之后，0.781
+
+## Resnet
+```text
+resnet_acc0.798683635276431_combo0.82761327304097.csv
+resnet_proba_t_0.798683635276431.csv
+resnet_proba_x_0.798683635276431.csv
+
+线上0.7457777777777777
+```
 ## 失败的尝试
 - 添加特征
 - lstm：也不算失败，目前网络结构比较简单，个人感觉应该LSTM的效果比CNN要好
