@@ -2,9 +2,9 @@
 """
 @author: quincyqiang
 @software: PyCharm
-@file: mlp.py
-@time: 2020/7/25 22:31
-@description：https://github.com/cauchyturing/UCR_Time_Series_Classification_Deep_Learning_Baseline
+@file: fcn.py
+@time: 2020/7/25 23:48
+@description：
 """
 
 from sklearn.metrics import *
@@ -17,11 +17,9 @@ from load_data import *
 from load_inv_data import *
 from utils import *
 
-
 train_lstm, y1, test_lstm, seq_len, _ = load_lstm_data()
 
 y = load_y()
-
 
 # x_train_mean = train_lstm.mean()
 # x_train_std = train_lstm.std()
@@ -31,19 +29,29 @@ y = load_y()
 np.random.seed(813306)
 
 
-def build_mlp():
-    x = keras.layers.Input(train_lstm.shape[1:])
-    y = keras.layers.Dropout(0.1)(x)
-    y = keras.layers.Dense(500, activation='relu')(y)
-    y = keras.layers.Dropout(0.2)(y)
-    y = keras.layers.Dense(500, activation='relu')(y)
-    y = keras.layers.Dropout(0.2)(y)
-    y = keras.layers.Dense(500, activation='relu')(y)
-    y = keras.layers.Dropout(0.3)(y)
-    out = keras.layers.Dense(19, activation='softmax')(y)
-    out = BatchNormalization()(Dropout(0.2)(Dense(128, activation='relu')(Flatten()(out))))
-    out = keras.layers.Dense(19, activation='softmax')(out)
-    model = keras.models.Model(inputs=x, outputs=out)
+def build_fcn():
+    input = keras.layers.Input(shape=(train_lstm.shape[1:]))
+    x = Reshape((60, train_lstm.shape[2], 1), input_shape=(60, train_lstm.shape[2]))(input)
+
+    #    drop_out = Dropout(0.2)(x)
+    conv1 = keras.layers.Conv2D(128, 3, 1, padding='same')(x)
+    conv1 = keras.layers.BatchNormalization()(conv1)
+    conv1 = keras.layers.Activation('relu')(conv1)
+
+    #    drop_out = Dropout(0.2)(conv1)
+    conv2 = keras.layers.Conv2D(256, 3, 1, padding='same')(conv1)
+    conv2 = keras.layers.BatchNormalization()(conv2)
+    conv2 = keras.layers.Activation('relu')(conv2)
+
+    #    drop_out = Dropout(0.2)(conv2)
+    conv3 = keras.layers.Conv2D(128, 3, 1, padding='same')(conv2)
+    conv3 = keras.layers.BatchNormalization()(conv3)
+    conv3 = keras.layers.Activation('relu')(conv3)
+
+    full = keras.layers.GlobalAveragePooling2D()(conv3)
+    # out = BatchNormalization()(Dropout(0.2)(Dense(128, activation='relu')(Flatten()(out))))
+    out = keras.layers.Dense(19, activation='softmax')(full)
+    model = keras.models.Model(inputs=input, outputs=out)
     return model
 
 
@@ -62,7 +70,7 @@ class_weight = np.array([0.03304992, 0.09270433, 0.05608886, 0.04552935, 0.05965
 for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
     print("{}train {}th fold{}".format('==' * 20, fold + 1, '==' * 20))
     y_ = to_categorical(y, num_classes=19)
-    model = build_mlp()
+    model = build_fcn()
     model.compile(loss='categorical_crossentropy',
                   optimizer='rmsprop',
                   metrics=['acc'])
@@ -76,7 +84,7 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
                                    verbose=1,
                                    mode='max',
                                    patience=30)
-    checkpoint = ModelCheckpoint(f'models/fold{fold}_mlp.h5',
+    checkpoint = ModelCheckpoint(f'models/fold{fold}_fcn.h5',
                                  monitor='val_acc',
                                  verbose=0,
                                  mode='max',
@@ -93,7 +101,7 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
                         validation_data=(train_lstm[valid_index],
                                          y_[valid_index]),
                         callbacks=[plateau, early_stopping, checkpoint, csv_logger])
-    model.load_weights(f'models/fold{fold}_mlp.h5')
+    model.load_weights(f'models/fold{fold}_fcn.h5')
     proba_x = model.predict(train_lstm[valid_index],
                             verbose=0, batch_size=1024)
     proba_t += model.predict(test_lstm, verbose=0, batch_size=1024) / 5.
@@ -130,8 +138,8 @@ print("5kflod mean combo score:{}".format(np.mean(combo_scores)))
 
 sub = pd.read_csv('data/提交结果示例.csv')
 sub.behavior_id = np.argmax(proba_t, axis=1)
-sub.to_csv('result/mlp_acc{}_combo{}.csv'.format(np.mean(acc_scores), np.mean(combo_scores)), index=False)
+sub.to_csv('result/fcn_acc{}_combo{}.csv'.format(np.mean(acc_scores), np.mean(combo_scores)), index=False)
 pd.DataFrame(proba_t, columns=['pred_{}'.format(i) for i in range(19)]).to_csv(
-    'result/mlp_proba_t_{}.csv'.format(np.mean(acc_scores)), index=False)
+    'result/fcn_proba_t_{}.csv'.format(np.mean(acc_scores)), index=False)
 pd.DataFrame(final_x, columns=['pred_{}'.format(i) for i in range(19)]).to_csv(
-    'result/mlp_proba_x_{}.csv'.format(np.mean(acc_scores)), index=False)
+    'result/fcn_proba_x_{}.csv'.format(np.mean(acc_scores)), index=False)

@@ -1,32 +1,19 @@
 # 网络结构
-import os
 import pickle
 
-import numpy as np
-import tensorflow as tf
-from sklearn.model_selection import StratifiedKFold
-from tensorflow.keras.callbacks import EarlyStopping
+from sklearn.metrics import *
+from sklearn.model_selection import *
+from tensorflow.keras import Model
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
+from tensorflow.keras.layers import *
 # 加载数据和模型
-from tensorflow.keras.callbacks import ModelCheckpoint
-from tensorflow.keras.callbacks import ReduceLROnPlateau
-from tensorflow.keras.layers import Activation
-from tensorflow.keras.layers import AveragePooling2D
-from tensorflow.keras.layers import BatchNormalization
-from tensorflow.keras.layers import Conv2D
-from tensorflow.keras.layers import Dense
-from tensorflow.keras.layers import Dropout
-from tensorflow.keras.layers import GlobalAveragePooling2D
-from tensorflow.keras.layers import Input
-from tensorflow.keras.layers import MaxPooling2D
-from tensorflow.keras.layers import Softmax
-from tensorflow.keras.layers import UpSampling2D
-from tensorflow.keras.models import Model
 from tensorflow.keras.regularizers import l2
-from tensorflow.keras.utils import to_categorical
 
+from load_data import *
+from load_inv_data import *
 from sjf_class_weight import DatasetLoader
 from sjf_extend import *
-from utils import score
+from utils import *
 
 
 class SoftThreshold(tf.keras.layers.Layer):
@@ -165,17 +152,17 @@ else:
     with open('data/x_val.pkl', 'rb') as f:
         x_val = pickle.load(f)
 
-
-
-kfold = StratifiedKFold(5, shuffle=True,random_state=12255877)
+kfold = StratifiedKFold(5, shuffle=True, random_state=12255877)
 proba_t = np.zeros((7500, 19))
-train_score=[]
-test_score=[]
-for fold,(xx,yy) in enumerate(kfold.split(x,y)):
-    inputs=Input(shape=[64,8,1])
-    outputs=CNN(inputs,num_classes=19)
-    model=Model(inputs=inputs,outputs=outputs)
-    _y=to_categorical(y,19)
+acc_scores = []
+combo_scores = []
+final_x = np.zeros((7292, 19))
+
+for fold, (train_index, valid_index) in enumerate(kfold.split(x, y)):
+    inputs = Input(shape=[64, 8, 1])
+    outputs = CNN(inputs, num_classes=19)
+    model = Model(inputs=inputs, outputs=outputs)
+    _y = to_categorical(y, 19)
     plateau = ReduceLROnPlateau(monitor="val_score",
                                 verbose=1,
                                 mode='max',
@@ -185,36 +172,39 @@ for fold,(xx,yy) in enumerate(kfold.split(x,y)):
                                    verbose=1,
                                    mode='max',
                                    patience=60)
-    checkpoint = ModelCheckpoint(f'aspp_baseline{fold}.h5',
+    checkpoint = ModelCheckpoint(f'models/sknet_baseline{fold}.h5',
                                  monitor='val_score',
                                  verbose=1,
                                  mode='max',
                                  save_best_only=True)
-    weight_decay=WeightDecayScheduler(init_lr=0.001)
-    model.compile(loss="categorical_crossentropy",optimizer=AdamW(lr=0.001,weight_decay=6e-4),metrics=["acc",score])
-    trained_model=model.fit(
-            x[xx],
-            _y[xx],
-            batch_size=batch_size,
-            class_weight=(1-class_weight)**2,
-            shuffle=True,
-            validation_data=(x[yy],_y[yy]),
-            epochs=800,
-            callbacks=[plateau,early_stopping,checkpoint,weight_decay])
-    model.load_weights(f'aspp_baseline{fold}.h5')
-    proba_t += model.predict(x_val, verbose=0, batch_size=1024)/5.
-    train_score.append(np.array(trained_model.history["score"]).max())
-    test_score.append(np.array(trained_model.history["val_score"]).max())
-label=proba_t.argmax(axis=1)
-print("on_train_set:",np.array(train_score))
-print("average:",np.array(train_score).mean())
-print("on_test_set:",np.array(test_score))
-print("average:",np.array(test_score).mean())
-print("done")
+    weight_decay = WeightDecayScheduler(init_lr=0.001)
+    model.compile(loss="categorical_crossentropy", optimizer=AdamW(lr=0.001, weight_decay=6e-4), metrics=["acc", score])
+    trained_model = model.fit(
+        x[train_index],
+        _y[train_index],
+        batch_size=batch_size,
+        class_weight=dict(enumerate((1 - class_weight) ** 2)),
+        shuffle=True,
+        validation_data=(x[valid_index], _y[valid_index]),
+        epochs=800,
+        callbacks=[plateau, early_stopping, checkpoint, weight_decay])
+    model.load_weights(f'models/sknet_baseline{fold}.h5')
+    proba_x = model.predict(x[valid_index],
+                            verbose=0, batch_size=1024)
+    proba_t += model.predict(x_val, verbose=0, batch_size=1024) / 5.
+    final_x[valid_index] += proba_x
 
-import pandas as pd
-frame = pd.DataFrame(proba_t)
-frame.rename(columns={},inplace = True)
-frame.reset_index(inplace = True)
-frame.rename(columns={'index':'fragment_id'},inplace = True)
-frame.to_csv('submit_prob_87.48_99.32.csv',index=False)
+    oof_y = np.argmax(proba_x, axis=1)
+    score1 = accuracy_score(y[valid_index], oof_y)
+    # print('accuracy_score',score1)
+    score = sum(acc_combo(y_true, y_pred) for y_true, y_pred in zip(y[valid_index], oof_y)) / oof_y.shape[0]
+    print('accuracy_score', score1, 'acc_combo', score)
+    acc_scores.append(score1)
+    combo_scores.append(score)
+
+sub = pd.read_csv('data/提交结果示例.csv')
+sub.to_csv('result/sk_acc{}_combo{}.csv'.format(np.mean(acc_scores), np.mean(combo_scores)), index=False)
+pd.DataFrame(proba_t, columns=['pred_{}'.format(i) for i in range(19)]).to_csv(
+    'result/sk_proba_t_{}.csv'.format(np.mean(acc_scores)), index=False)
+pd.DataFrame(final_x, columns=['pred_{}'.format(i) for i in range(19)]).to_csv(
+    'result/sk_proba_x_{}.csv'.format(np.mean(acc_scores)), index=False)

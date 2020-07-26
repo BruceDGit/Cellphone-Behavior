@@ -323,6 +323,11 @@ Time series classification with Echo Memory Networks
 线下：0.444+ 可能因为和原论文实现差别太大的原因。。
 - [MultiVariateCNN](https://github.com/salmansust/TimeSeries-CNN)
 每个变量单做一个输入
+
+- [SRCNN](https://github.com/abdulwaheedsoudagar/SR-CNN/blob/master/SRCNN.ipynb)
+
+论文地址：
+[Image Super-Resolution Using DeepConvolutional Networks](https://arxiv.org/pdf/1501.00092v3.pdf)
 ## 参考资料
 - [HAR](https://github.com/search?q=HAR+cnn)
 - [HAR-WISDM_ar](https://github.com/coloriz/HAR-WISDM_ar)
