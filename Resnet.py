@@ -200,3 +200,9 @@ pd.DataFrame(proba_t, columns=['pred_{}'.format(i) for i in range(19)]).to_csv(
     'result/resnet_proba_t_{}.csv'.format(np.mean(acc_scores)), index=False)
 pd.DataFrame(final_x, columns=['pred_{}'.format(i) for i in range(19)]).to_csv(
     'result/resnet_proba_x_{}.csv'.format(np.mean(acc_scores)), index=False)
+
+
+# Epoch 00268: early stopping
+# accuracy_score 0.8319615912208504 acc_combo 0.8544646939708651
+# 5kflod mean acc score:0.8150041697575524
+# 5kflod mean combo score:0.8420657418118882

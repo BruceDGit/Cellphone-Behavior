@@ -18,7 +18,7 @@ from tensorflow.keras.layers import *
 from load_data import *
 from load_inv_data import *
 from utils import *
-
+from mixup_generator import MixupGenerator
 train_features, _, test_features = load_features_data(feature_id=2)
 
 train_lstm, y1, test_lstm, seq_len, _ = load_lstm_data()
@@ -59,6 +59,150 @@ def multi_conv2d(input_forward):
     return X
 
 
+def LSTM_FCN(input):
+    x = LSTM(64)(input)
+    x = Dropout(0.8)(x)
+
+    # y = Permute((2, 1))(input)
+    y = Conv1D(512, 8, padding='same', kernel_initializer='he_uniform')(input)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
+
+    y = Conv1D(256, 6, padding='same', kernel_initializer='he_uniform')(y)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
+
+    y = Conv1D(128, 4, padding='same', kernel_initializer='he_uniform')(y)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
+
+    y = GlobalAveragePooling1D()(y)
+
+    x = Concatenate()([x, y])
+
+    return x
+
+
+def build_resnet(input, input_shape, n_feature_maps):
+    print('build conv_x')
+    x = Reshape((60, train_lstm.shape[2], 1), input_shape=(60, train_lstm.shape[2]))(input)
+
+    conv_x = BatchNormalization()(x)
+    conv_x = Conv2D(n_feature_maps, 3, 1, padding='same')(conv_x)
+    conv_x = BatchNormalization()(conv_x)
+    conv_x = Activation('relu')(conv_x)
+
+    print('build conv_y')
+    conv_y = Conv2D(n_feature_maps, 3, 1, padding='same')(conv_x)
+    conv_y = BatchNormalization()(conv_y)
+    conv_y = Activation('relu')(conv_y)
+
+    print('build conv_z')
+    conv_z = Conv2D(n_feature_maps, 3, 1, padding='same')(conv_y)
+    conv_z = BatchNormalization()(conv_z)
+
+    is_expand_channels = not (input_shape[-1] == n_feature_maps)
+    if is_expand_channels:
+        shortcut_y = Conv2D(n_feature_maps, 1, 1, padding='same')(x)
+        shortcut_y = BatchNormalization()(shortcut_y)
+    else:
+        shortcut_y = BatchNormalization()(x)
+    print('Merging skip connection')
+    y = Add()([shortcut_y, conv_z])
+    y = Activation('relu')(y)
+
+    print('build conv_x')
+    x1 = y
+    conv_x = Conv2D(n_feature_maps * 2, 3, 1, padding='same')(x1)
+    conv_x = BatchNormalization()(conv_x)
+    conv_x = Activation('relu')(conv_x)
+
+    print('build conv_y')
+    conv_y = Conv2D(n_feature_maps * 2, 3, 1, padding='same')(conv_x)
+    conv_y = BatchNormalization()(conv_y)
+    conv_y = Activation('relu')(conv_y)
+
+    print('build conv_z')
+    conv_z = Conv2D(n_feature_maps * 2, 3, 1, padding='same')(conv_y)
+    conv_z = BatchNormalization()(conv_z)
+
+    is_expand_channels = not (input_shape[-1] == n_feature_maps * 2)
+    if is_expand_channels:
+        shortcut_y = Conv2D(n_feature_maps * 2, 1, 1, padding='same')(x1)
+        shortcut_y = BatchNormalization()(shortcut_y)
+    else:
+        shortcut_y = BatchNormalization()(x1)
+    print('Merging skip connection')
+    y = Add()([shortcut_y, conv_z])
+    y = Activation('relu')(y)
+
+    print('build conv_x')
+    x1 = y
+    conv_x = Conv2D(n_feature_maps * 2, 3, 1, padding='same')(x1)
+    conv_x = BatchNormalization()(conv_x)
+    conv_x = Activation('relu')(conv_x)
+
+    print('build conv_y')
+    conv_y = Conv2D(n_feature_maps * 2, 3, 1, padding='same')(conv_x)
+    conv_y = BatchNormalization()(conv_y)
+    conv_y = Activation('relu')(conv_y)
+
+    print('build conv_z')
+    conv_z = Conv2D(n_feature_maps * 2, 3, 1, padding='same')(conv_y)
+    conv_z = BatchNormalization()(conv_z)
+
+    is_expand_channels = not (input_shape[-1] == n_feature_maps * 2)
+    if is_expand_channels:
+        shortcut_y = Conv2D(n_feature_maps * 2, 1, 1, padding='same')(x1)
+        shortcut_y = BatchNormalization()(shortcut_y)
+    else:
+        shortcut_y = BatchNormalization()(x1)
+    print('Merging skip connection')
+    y = Add()([shortcut_y, conv_z])
+    y = Activation('relu')(y)
+
+    full = GlobalAveragePooling2D()(y)
+    full = Dropout(0.2)(full)
+
+    return full
+
+
+def build_mlp(input):
+    y = Dropout(0.1)(input)
+    y = Dense(500, activation='relu')(y)
+    y = Dropout(0.2)(y)
+    y = Dense(500, activation='relu')(y)
+    y = Dropout(0.2)(y)
+    y = Dense(500, activation='relu')(y)
+    y = Dropout(0.3)(y)
+    out = BatchNormalization()(Dropout(0.2)(Dense(128, activation='relu')(Flatten()(y))))
+    return out
+
+
+def DeepLSTMConv(input_X):
+    """
+       structure of neural network.
+       @param input_shape: tuple, in format (time axis, sensor signals, chunnel).
+       https://www.jianshu.com/p/8407cfc6e336
+       """
+    x = Reshape((60, train_lstm.shape[2], 1), input_shape=(60, train_lstm.shape[2]))(input_X)
+
+    x = Conv2D(padding="same", kernel_size=3, filters=64, activation='relu')(x)
+    x = BatchNormalization()(x)
+    x = Conv2D(padding="same", kernel_size=3, filters=128, activation='relu')(x)
+    x = Conv2D(padding="same", kernel_size=3, filters=128, activation='relu')(x)
+    x = Conv2D(padding="same", kernel_size=3, filters=128, activation='relu')(x)
+    # x = MaxPooling2D(pool_size=(3, 1))(x)
+    print(x.shape)
+    x = Reshape((x.shape[1], x.shape[2]*x.shape[3]))(x)
+    print(x.shape)
+    x = LSTM(128, return_sequences=True, activation='relu')(x)
+    x = LSTM(128, return_sequences=True, activation='relu')(x)
+    x = Dropout(0.2)(x)
+    x = Flatten()(x)
+    return x
+
+
 def Net():
     input_forward = Input(shape=(60, train_lstm.shape[2]))
     input_backward = Input(shape=(60, train_lstm.shape[2]))
@@ -76,8 +220,25 @@ def Net():
     dense = Dense(256, activation='relu')(dense)
     dense = BatchNormalization()(dense)
 
-    output = Concatenate(axis=-1)([X_forward, X_backward, dense])
-    output = BatchNormalization()(Dropout(0.2)(Dense(640, activation='relu')(Flatten()(output))))
+    lstm_forward = LSTM_FCN(input_forward)
+    lstm_backward = LSTM_FCN(input_backward)
+
+    resnet_forward = build_resnet(input_forward, train_lstm.shape[1:], 64)
+    resnet_backward = build_resnet(input_backward, train_lstm.shape[1:], 64)
+
+    mlp_forward = build_mlp(input_forward)
+    # lstmconv_forward = DeepLSTMConv(input_forward)
+    # lstmconv_backward = DeepLSTMConv(input_backward)
+
+    output = Concatenate(axis=-1)([X_forward, X_backward, dense,
+                                   lstm_forward,
+                                   # lstm_backward,
+                                   resnet_forward,
+                                   # resnet_backward,
+                                   # mlp_forward,
+                                   # lstmconv_forward, lstmconv_backward
+                                   ])
+    output = BatchNormalization()(Dropout(0.2)(Dense(720, activation='relu')(Flatten()(output))))
 
     output = Dense(19, activation='softmax')(output)
     return Model([input_forward, input_backward, feainput], output)
@@ -111,7 +272,7 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
     early_stopping = EarlyStopping(monitor='val_acc',
                                    verbose=1,
                                    mode='max',
-                                   patience=30)
+                                   patience=50)
     checkpoint = ModelCheckpoint(f'models/fold{fold}.h5',
                                  monitor='val_acc',
                                  verbose=0,

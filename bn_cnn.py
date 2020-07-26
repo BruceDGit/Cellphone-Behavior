@@ -11,6 +11,17 @@ from sklearn.model_selection import StratifiedKFold
 from tensorflow.keras.layers import *
 from tqdm import tqdm
 from utils import acc_combo
+from keras.callbacks import ModelCheckpoint, LearningRateScheduler
+from keras.preprocessing.image import ImageDataGenerator
+from keras.regularizers import l2
+from keras import backend as K
+from keras.models import Model
+from keras.datasets import cifar10
+import numpy as np
+import os
+from mixup_generator import MixupGenerator
+
+
 
 train = pd.read_csv('data/sensor_train.csv')
 test = pd.read_csv('data/sensor_test.csv')
@@ -100,13 +111,24 @@ for fold, (xx, yy) in enumerate(kfold.split(x, y)):
                                  verbose=0,
                                  mode='max',
                                  save_best_only=True)
-    model.fit(x[xx], y_[xx],
-              epochs=500,
-              batch_size=256,
-              verbose=2,
-              shuffle=True,
-              validation_data=(x[yy], y_[yy]),
-              callbacks=[plateau, early_stopping, checkpoint])
+    # model.fit(x[xx], y_[xx],
+    #           epochs=500,
+    #           batch_size=256,
+    #           verbose=2,
+    #           shuffle=True,
+    #           validation_data=(x[yy], y_[yy]),
+    #           callbacks=[plateau, early_stopping, checkpoint])
+    datagen = ImageDataGenerator(
+        # width_shift_range=0.1,
+        # height_shift_range=0.1,
+        horizontal_flip=True)
+    training_generator = MixupGenerator(x[xx], y_[xx], batch_size=256, alpha=0.2)()
+    model.fit_generator(generator=training_generator,
+                        steps_per_epoch=x.shape[0] // 256,
+                        validation_data=(x[yy], y_[yy]),
+                        epochs=500, verbose=1,
+                        callbacks=[plateau, early_stopping, checkpoint])
+
     model.load_weights(f'models/fold{fold}.h5')
 
     proba_x = model.predict(x[yy], verbose=0, batch_size=1024)

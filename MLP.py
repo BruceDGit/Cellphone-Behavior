@@ -40,8 +40,7 @@ def build_mlp():
     y = keras.layers.Dropout(0.2)(y)
     y = keras.layers.Dense(500, activation='relu')(y)
     y = keras.layers.Dropout(0.3)(y)
-    out = keras.layers.Dense(19, activation='softmax')(y)
-    out = BatchNormalization()(Dropout(0.2)(Dense(128, activation='relu')(Flatten()(out))))
+    out = BatchNormalization()(Dropout(0.2)(Dense(128, activation='relu')(Flatten()(y))))
     out = keras.layers.Dense(19, activation='softmax')(out)
     model = keras.models.Model(inputs=x, outputs=out)
     return model
