@@ -231,6 +231,15 @@ resnet_proba_x_0.798683635276431.csv
 
 线上0.7457777777777777
 ```
+## [MCNN](https://www.jianshu.com/p/63c9ef510464)
+```text
+Multi-Scale Convolutional Neural Networks for Time Series Classification
+
+针对现有时间序列分类方法的特征提取与分类过程分离，且无法提取存在于不同时间尺度序列的不同特征的问题，作者提出MCNN模型。
+对于单一时间序列输入，进行降采样和滑动平均等变化，产生多组长度不同的时间序列，并在多组时间序列上进行卷积，提取不同时间尺度序列的特征。
+```
+
+
 ## 失败的尝试
 - 添加特征
 - lstm：也不算失败，目前网络结构比较简单，个人感觉应该LSTM的效果比CNN要好
