@@ -222,7 +222,7 @@ cnn双输入（正向sequences和反向sequences） 可以对应har.py代码，
 - ★根据类别频率统计class weight，加上线上效果0.788666
 - 使用jitter进行数据增强：线下分数较高，线上0.779
 - 加入LSTM-FCN之后，0.781
-
+- ★数据增强 data enhance:对每折数据争抢很重要，否则全局会严重过拟合 线上0.794
 ## Resnet
 ```text
 resnet_acc0.798683635276431_combo0.82761327304097.csv
