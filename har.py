@@ -19,11 +19,52 @@ from load_data import *
 from load_inv_data import *
 from utils import *
 from mixup_generator import MixupGenerator
+
 train_features, _, test_features = load_features_data(feature_id=2)
 
 train_lstm, y1, test_lstm, seq_len, _ = load_lstm_data()
 train_lstm_inv, _, test_lstm_inv, _, _ = load_lstm_inv_data()
 y = load_y()
+
+import tensorflow as tf
+import numpy as np
+from tensorflow import keras
+
+
+def BLOCK(seq, filters, kernal_size):
+    cnn = keras.layers.Conv1D(filters, 1, padding='SAME', activation='relu')(seq)
+    cnn = keras.layers.LayerNormalization()(cnn)
+
+    cnn = keras.layers.Conv1D(filters, kernal_size, padding='SAME', activation='relu')(cnn)
+    cnn = keras.layers.LayerNormalization()(cnn)
+
+    cnn = keras.layers.Conv1D(filters, 1, padding='SAME', activation='relu')(cnn)
+    cnn = keras.layers.LayerNormalization()(cnn)
+
+    seq = keras.layers.Conv1D(filters, 1)(seq)
+    seq = keras.layers.Add()([seq, cnn])
+    return seq
+
+
+def BLOCK2(seq, filters=128, kernal_size=5):
+    seq = BLOCK(seq, filters, kernal_size)
+    seq = keras.layers.MaxPooling1D(2)(seq)
+    seq = keras.layers.SpatialDropout1D(0.3)(seq)
+    seq = BLOCK(seq, filters // 2, kernal_size)
+    seq = keras.layers.GlobalAveragePooling1D()(seq)
+    return seq
+
+
+def ComplexConv1D(inputs):
+    seq_3 = BLOCK2(inputs, kernal_size=3)
+    seq_5 = BLOCK2(inputs, kernal_size=5)
+    seq_7 = BLOCK2(inputs, kernal_size=7)
+    seq = keras.layers.concatenate([seq_3, seq_5, seq_7])
+    seq = keras.layers.Dense(512, activation='relu')(seq)
+    seq = keras.layers.Dropout(0.3)(seq)
+    seq = keras.layers.Dense(128, activation='relu')(seq)
+    seq = keras.layers.Dropout(0.3)(seq)
+    return seq
 
 
 def multi_conv2d(input_forward):
@@ -194,7 +235,7 @@ def DeepLSTMConv(input_X):
     x = Conv2D(padding="same", kernel_size=3, filters=128, activation='relu')(x)
     # x = MaxPooling2D(pool_size=(3, 1))(x)
     print(x.shape)
-    x = Reshape((x.shape[1], x.shape[2]*x.shape[3]))(x)
+    x = Reshape((x.shape[1], x.shape[2] * x.shape[3]))(x)
     print(x.shape)
     x = LSTM(128, return_sequences=True, activation='relu')(x)
     x = LSTM(128, return_sequences=True, activation='relu')(x)
@@ -220,20 +261,23 @@ def Net():
     dense = Dense(256, activation='relu')(dense)
     dense = BatchNormalization()(dense)
 
-    lstm_forward = LSTM_FCN(input_forward)
-    lstm_backward = LSTM_FCN(input_backward)
+    seq_forward=ComplexConv1D(input_forward)
+    seq_backward=ComplexConv1D(input_backward)
 
-    resnet_forward = build_resnet(input_forward, train_lstm.shape[1:], 64)
-    resnet_backward = build_resnet(input_backward, train_lstm.shape[1:], 64)
+    # lstm_forward = LSTM_FCN(input_forward)
+    # lstm_backward = LSTM_FCN(input_backward)
 
-    mlp_forward = build_mlp(input_forward)
+    # resnet_forward = build_resnet(input_forward, train_lstm.shape[1:], 64)
+    # resnet_backward = build_resnet(input_backward, train_lstm.shape[1:], 64)
+
+    # mlp_forward = build_mlp(input_forward)
     # lstmconv_forward = DeepLSTMConv(input_forward)
     # lstmconv_backward = DeepLSTMConv(input_backward)
 
     output = Concatenate(axis=-1)([X_forward, X_backward, dense,
-                                   lstm_forward,
+                                   seq_forward,seq_backward
                                    # lstm_backward,
-                                   resnet_forward,
+                                   # resnet_forward,
                                    # resnet_backward,
                                    # mlp_forward,
                                    # lstmconv_forward, lstmconv_backward

@@ -18,6 +18,10 @@ from load_data import *
 from load_inv_data import *
 from utils import *
 
+import tensorflow as tf
+import numpy as np
+from tensorflow import keras
+
 
 def data_augmentation(feature, label, ws):
     seq_len = feature.shape[1]
@@ -79,8 +83,8 @@ def get_mcnn_input(feature):
     :return:
     """
     origin = feature  # 原始特征
-    ms_branch, ms_lens = down_sampling(feature, rates=[2,3,4,5])  # 降采样
-    mf_branch, mf_lens = moving_average(feature, moving_ws=[5, 10, 20, 30,40,50])  # 移动平均
+    ms_branch, ms_lens = down_sampling(feature, rates=[2, 3, 4, 5])  # 降采样
+    mf_branch, mf_lens = moving_average(feature, moving_ws=[5, 10, 20, 30, 40, 50])  # 移动平均
     features = [origin, *ms_branch, *mf_branch]  # 长度为8：1+ 4+3=8
     features = [data.reshape(data.shape + (1,)) for data in features]  # 变成(390,seq_len,1),eg:(390, 176, 1)
     # data_lens = [origin.shape[1], *ms_lens, *mf_lens]
@@ -92,14 +96,14 @@ pooling_factor = 10
 
 
 def MCNN_model(feature_lens, class_num):
-    input_sigs = [Input(shape=(bra_len, 8,1)) for bra_len in feature_lens]
+    input_sigs = [Input(shape=(bra_len, 8, 1)) for bra_len in feature_lens]
     # local convolution
     ms_sigs = []
     for i in range(len(input_sigs)):
         _ms = Conv2D(filters=128,
-                   kernel_size=(3, 3),
-                   activation='relu',
-                   padding='same')(input_sigs[i])
+                     kernel_size=(3, 3),
+                     activation='relu',
+                     padding='same')(input_sigs[i])
 
         # _ms = Dropout(0.5)(_ms)
         ms_sigs.append(_ms)
@@ -107,30 +111,84 @@ def MCNN_model(feature_lens, class_num):
 
     # fully convolution
     conved = Conv2D(padding='valid', kernel_size=conv_size, filters=256, activation='relu')(merged)
-    conved= BatchNormalization()(conved)
-    conved= Conv2D(filters=128,
-               kernel_size=(3, 3),
-               activation='relu',
-               padding='same')(conved)
-    conved= BatchNormalization()(conved)
+    conved = BatchNormalization()(conved)
+    conved = Conv2D(filters=128,
+                    kernel_size=(3, 3),
+                    activation='relu',
+                    padding='same')(conved)
+    conved = BatchNormalization()(conved)
 
-    conved= MaxPooling2D()(conved)
-    conved= Dropout(0.2)(conved)
-    conved= Conv2D(filters=256,
-               kernel_size=(3, 3),
-               activation='relu',
-               padding='same')(conved)
+    conved = MaxPooling2D()(conved)
+    conved = Dropout(0.2)(conved)
+    conved = Conv2D(filters=256,
+                    kernel_size=(3, 3),
+                    activation='relu',
+                    padding='same')(conved)
     # conved= BatchNormalization()(conved)
 
-    conved= Dropout(0.3)(conved)
+    conved = Dropout(0.3)(conved)
     conved = Conv2D(filters=512,
-               kernel_size=(3, 3),
-               activation='relu',
-               padding='same')(conved)
+                    kernel_size=(3, 3),
+                    activation='relu',
+                    padding='same')(conved)
     pooled = GlobalAveragePooling2D()(conved)
 
     conved = Flatten()(pooled)
     x = Dense(256, activation='relu')(conved)
+    x = Dense(class_num, activation='softmax')(x)
+    MCNN = Model(inputs=input_sigs, outputs=x)
+    return MCNN
+
+
+def BLOCK(seq, filters, kernal_size):
+    cnn = keras.layers.Conv1D(filters, 1, padding='SAME', activation='relu')(seq)
+    cnn = keras.layers.LayerNormalization()(cnn)
+
+    cnn = keras.layers.Conv1D(filters, kernal_size, padding='SAME', activation='relu')(cnn)
+    cnn = keras.layers.LayerNormalization()(cnn)
+
+    cnn = keras.layers.Conv1D(filters, 1, padding='SAME', activation='relu')(cnn)
+    cnn = keras.layers.LayerNormalization()(cnn)
+
+    seq = keras.layers.Conv1D(filters, 1)(seq)
+    seq = keras.layers.Add()([seq, cnn])
+    return seq
+
+
+def BLOCK2(seq, filters=128, kernal_size=5):
+    seq = BLOCK(seq, filters, kernal_size)
+    seq = keras.layers.MaxPooling1D(2)(seq)
+    seq = keras.layers.SpatialDropout1D(0.3)(seq)
+    seq = BLOCK(seq, filters // 2, kernal_size)
+    seq = keras.layers.GlobalAveragePooling1D()(seq)
+    return seq
+
+
+def ComplexConv1D(inputs):
+    seq_3 = BLOCK2(inputs, kernal_size=3)
+    seq_5 = BLOCK2(inputs, kernal_size=5)
+    seq_7 = BLOCK2(inputs, kernal_size=7)
+    seq = keras.layers.concatenate([seq_3, seq_5, seq_7])
+    seq = keras.layers.Dense(512, activation='relu')(seq)
+    seq = keras.layers.Dropout(0.3)(seq)
+    seq = keras.layers.Dense(128, activation='relu')(seq)
+    seq = keras.layers.Dropout(0.3)(seq)
+    return seq
+
+
+def MCNN_model_v2(feature_lens, class_num):
+    input_sigs = [Input(shape=(bra_len, 8)) for bra_len in feature_lens]
+    ms_sigs = []
+    for i in range(len(input_sigs)):
+        _ms = ComplexConv1D(input_sigs[i])
+        _ms = Dropout(0.2)(_ms)
+        ms_sigs.append(_ms)
+    merged = concatenate(ms_sigs, axis=1)
+
+    x = Flatten()(merged)
+    x = Dense(512, activation='relu')(x)
+    x = Dense(1024, activation='relu')(x)
+
     x = Dense(class_num, activation='softmax')(x)
     MCNN = Model(inputs=input_sigs, outputs=x)
     return MCNN
@@ -153,11 +211,11 @@ f_train, la_tr, f_test, _, _ = load_lstm_data()
 f_trains = get_mcnn_input(f_train)
 f_tests = get_mcnn_input(f_test)
 feat_lens = [data.shape[1] for data in f_trains]  # get the length info of each transform sequence
-
+print(feat_lens)
 for fold, (train_index, valid_index) in enumerate(kfold.split(f_train, la_tr)):
     print("{}train {}th fold{}".format('==' * 20, fold + 1, '==' * 20))
     y_ = to_categorical(la_tr, num_classes=19)
-    model = MCNN_model(feat_lens, y_.shape[1])
+    model = MCNN_model_v2(feat_lens, y_.shape[1])
 
     model.compile(loss='categorical_crossentropy',
                   optimizer='rmsprop',
