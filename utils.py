@@ -1,23 +1,10 @@
-import tensorflow as tf
 import numpy as np
-from tensorflow import keras
-import pandas as pd
-import os
-from sklearn.model_selection import StratifiedKFold
-import gc
-
 import tensorflow as tf
-import numpy as np
 
 
 def data_enhance(method, train_data, train_labels):
     if method == 'noise':
-        # noise = train_data + np.random.normal(0, 0.1, size=train_data.shape)
-        # return noise, train_labels
-        noise1 = train_data + np.random.normal(0, 0.1, size=train_data.shape)
-        noise2 = train_data + np.random.uniform(-0.3, 0.3, train_data.shape)
-        noise = np.r_[noise1, noise2]
-        train_labels = np.r_[train_labels, train_labels]
+        noise = train_data + np.random.normal(0, 0.1, size=train_data.shape)
         return noise, train_labels
 
     elif method == 'mixup':
@@ -39,17 +26,6 @@ def data_enhance(method, train_data, train_labels):
             y_mixup[i] = y1 * factor + y2 * (1 - factor)
 
         return x_mixup, y_mixup
-
-
-def save_results(path, output):
-    print('saving...')
-
-    df_r = pd.DataFrame(columns=['fragment_id', 'behavior_id'])
-    for i in range(len(output)):
-        behavior_id = output[i]
-        df_r = df_r.append(
-            {'fragment_id': i, 'behavior_id': behavior_id}, ignore_index=True)
-    df_r.to_csv(path, index=False)
 
 
 def single_score(y, y_pred):

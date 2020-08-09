@@ -315,11 +315,11 @@ def score(y_true, y_pred):
     Returns:
       Tensor标量
     """
-    mean_score = tf.py_func(py_score, [y_true, y_pred], [tf.float32, tf.float32])[0]
+    mean_score = tf.py_function(py_score, [y_true, y_pred], [tf.float32, tf.float32])[0]
     return tf.reshape(mean_score, shape=())
 
 
-tf.reset_default_graph()
+tf.compat.v1.reset_default_graph() # 清除默认的图形堆栈并且重置全局默认图形。
 
 
 class SoftThreshold(tf.keras.layers.Layer):
@@ -421,15 +421,19 @@ def CNN(inputs, num_classes):
     return x
 
 def train_and_predict_4cnn1d():
-    tf.reset_default_graph()
+    tf.compat.v1.reset_default_graph() # 清除默认的图形堆栈并且重置全局默认图形。
+
     csv_file = "data/sensor_train.csv"
     test_csv_file = "data/sensor_test.csv"
     filepath = 'models/best_weights_aspp_raw'
     batch_size = 128
-    config = tf.ConfigProto()
+    # config = tf.ConfigProto()
+    config=tf.compat.v1.ConfigProto()
     config.gpu_options.allow_growth = True  # 不全部占满显存, 按需分配
-    sess = tf.Session(config=config)
-    K.set_session(sess)
+    # sess = tf.Session(config=config)
+    sess = tf.compat.v1.Session(config=config)
+    # K.set_session(sess)
+    tf.compat.v1.keras.backend.set_session(sess)
     if True:
         dataset = DatasetLoader(csv_file, with_label=True, num_classes=19)
         dataset = dataset.make_numpy()
@@ -441,17 +445,23 @@ def train_and_predict_4cnn1d():
         data = dataset.resample(num_interpolation=64)
         x_val = data.apply_data()
 
-    config = tf.ConfigProto()
+    # config = tf.ConfigProto()
+    config=tf.compat.v1.ConfigProto()
+
     config.gpu_options.allow_growth = True  # 不全部占满显存, 按需分配
-    sess = tf.Session(config=config)
-    K.set_session(sess)
+    # sess = tf.Session(config=config)
+    sess = tf.compat.v1.Session(config=config)
+
+    # K.set_session(sess)
+    tf.compat.v1.keras.backend.set_session(sess)
+
     kfold = StratifiedKFold(5, shuffle=True, random_state=20001026)
     proba_t = np.zeros((7500, 19))
     proba_x = np.zeros((7292, 19))
     train_score = []
     test_score = []
     for fold, (xx, yy) in enumerate(kfold.split(x, y)):
-        tf.reset_default_graph()
+        tf.compat.v1.reset_default_graph() # 清除默认的图形堆栈并且重置全局默认图形。
         inputs = Input(shape=[64, 8])
         outputs = CNN(inputs, num_classes=19)
         model = Model(inputs=inputs, outputs=outputs)
@@ -480,12 +490,12 @@ def train_and_predict_4cnn1d():
             x_train,
             y_train,
             batch_size=batch_size,
-            class_weight=(1 - class_weight) ** 2,
+            class_weight=dict(enumerate((1 - class_weight) ** 2)),
             shuffle=True,
             validation_data=(x[yy], _y[yy]),
             epochs=1,
             callbacks=[plateau, early_stopping, checkpoint, weight_decay])
-        model.load_weights(f'fold{fold}.h5')
+        model.load_weights(f'models/fold{fold}.h5')
         proba_t += model.predict(x_val, verbose=0, batch_size=256) / 5.
         proba_x += model.predict(x, verbose=0, batch_size=256) / 5.
         train_score.append(np.array(trained_model.history["score"]).max())
@@ -511,7 +521,7 @@ def train_and_predict_4cnn1d():
     print("average:", test_average)
     print("min:", test_min)
 
-    frame = pd.DataFrame(label_x)
+    frame = pd.DataFrame(label_t)
     frame.rename(columns={0: 'behavior_id'}, inplace=True)
     frame.reset_index(inplace=True)
     frame.rename(columns={'index': 'fragment_id'}, inplace=True)
@@ -521,4 +531,8 @@ def train_and_predict_4cnn1d():
     frame.rename(columns={}, inplace=True)
     frame.reset_index(inplace=True)
     frame.rename(columns={'index': 'fragment_id'}, inplace=True)
-    frame.to_csv('result/submit_proba4', index=False)
+    frame.to_csv('result/submit_proba4.csv', index=False)
+
+
+if __name__ == '__main__':
+    train_and_predict_4cnn1d()

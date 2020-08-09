@@ -1,16 +1,22 @@
 #!/usr/bin/env python  
 # -*- coding:utf-8 _*-  
-""" 
-@author:quincyqiang 
-@license: Apache Licence 
-@file: har.py 
-@time: 2020-07-12 02:12
-@description:
-"""
-import tensorflow as tf
-import os
-os.environ['CUDA_VISIBLE_DEVICES']='1'
+from sklearn.metrics import *
+from tensorflow.keras import Model
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, CSVLogger, ReduceLROnPlateau
+from tensorflow.keras.layers import *
+from sklearn.model_selection import StratifiedKFold
+from load_data import *
+from load_inv_data import *
+from utils import *
 
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+# 创建路径
+if not os.path.exists('./result'):
+    os.mkdir('./result')
+if not os.path.exists('./models'):
+    os.mkdir('./models')
+if not os.path.exists('./logs'):
+    os.mkdir('./logs')
 # gpus = tf.config.experimental.list_physical_devices(device_type='GPU')
 # print(gpus)
 # if gpus:
@@ -21,19 +27,8 @@ os.environ['CUDA_VISIBLE_DEVICES']='1'
 #     #    [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=4096)])
 #     tf.config.set_visible_devices([gpu0], "GPU")
 
-import matplotlib.pyplot as plt
-from sklearn.metrics import *
-from sklearn.model_selection import *
-from tensorflow.keras import Model
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, CSVLogger, ReduceLROnPlateau
-from tensorflow.keras.layers import *
-
-from load_data import *
-from load_inv_data import *
-from utils import *
 
 train_features, _, test_features = load_features_data(feature_id=2)
-
 train_lstm, y1, test_lstm, seq_len, _ = load_lstm_data()
 train_lstm_inv, _, test_lstm_inv, _, _ = load_lstm_inv_data()
 y = load_y()
@@ -148,7 +143,6 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
     x_train_lstminv = np.r_[x_train_lstminv, x_en]
     y_train_lstminv = np.r_[y_train_lstminv, y_en]
 
-
     x_train_features = train_features[train_index]
     y_train_features = y_[train_index]
     x_train_copy = np.copy(x_train_features)
@@ -158,8 +152,10 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
     y_train_features = np.r_[y_train_features, y_en]
 
     from sklearn.utils import shuffle
-    x_train_lstm, x_train_lstminv,x_train_features, y_train_lstminv = shuffle(x_train_lstm, x_train_lstminv,x_train_features, y_train_lstminv)
-    print('Data enhanced (%s) => %d' % (' '.join(data_enhance_method), len(x_train_lstminv)))
+
+    x_train_lstm, x_train_lstminv, x_train_features, y_train_lstminv = shuffle(x_train_lstm, x_train_lstminv,
+                                                                               x_train_features, y_train_lstminv)
+    print('Data enhanced (%s) => %d' % (' '.join('noise'), len(x_train_lstminv)))
 
     history = model.fit([x_train_lstm,
                          x_train_lstminv,
@@ -187,24 +183,6 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
     print('accuracy_score', score1, 'acc_combo', score)
     acc_scores.append(score1)
     combo_scores.append(score)
-
-    # print(history.history.keys())
-    # # summarize history for accuracy
-    # plt.plot(history.history['acc'])
-    # plt.plot(history.history['val_acc'])
-    # plt.title('model accuracy')
-    # plt.ylabel('accuracy')
-    # plt.xlabel('epoch')
-    # plt.legend(['train', 'test'], loc='upper left')
-    # plt.show()
-    # # summarize history for loss
-    # plt.plot(history.history['loss'])
-    # plt.plot(history.history['val_loss'])
-    # plt.title('model loss')
-    # plt.ylabel('loss')
-    # plt.xlabel('epoch')
-    # plt.legend(['train', 'test'], loc='upper left')
-    # plt.show()
 
 print("5kflod mean acc score:{}".format(np.mean(acc_scores)))
 print("5kflod mean combo score:{}".format(np.mean(combo_scores)))
