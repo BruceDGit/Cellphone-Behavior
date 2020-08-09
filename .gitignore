@@ -4,7 +4,6 @@ __pycache__
 .git/
 models/
 .ipynb_checkpoints/
-data/
 logs/
 #result/
 model/
