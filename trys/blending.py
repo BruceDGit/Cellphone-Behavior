@@ -23,6 +23,6 @@ finalpred = (
         har_oof_test * 0.4
         # fcn_test * 0.1
 )
-sub = pd.read_csv('data/提交结果示例.csv')
+sub = pd.read_csv('../data/提交结果示例.csv')
 sub.behavior_id = np.argmax(finalpred, axis=1)
 sub.to_csv('result/blending.csv', index=False)

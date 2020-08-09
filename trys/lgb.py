@@ -17,7 +17,7 @@ import xgboost as xgb
 from catboost import CatBoostClassifier
 from sklearn import metrics
 from sklearn.model_selection import StratifiedKFold
-from create_features import get_feat
+from trys.create_features import get_feat
 from sklearn.metrics import accuracy_score
 from utils import acc_combo
 

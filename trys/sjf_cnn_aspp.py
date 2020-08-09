@@ -26,7 +26,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.utils import to_categorical
 
-from sjf_class_weight import DatasetLoader
+from trys.sjf_class_weight import DatasetLoader
 from utils import score, acc_combo
 
 class ASPP(object):
@@ -89,8 +89,8 @@ def CNN(inputs, num_classes):
 inputs = Input(shape=[200, 8])
 outputs = CNN(inputs, num_classes=19)
 
-train_csv_file = "data/sensor_train.csv"
-test_csv_file = "data/sensor_test.csv"
+train_csv_file = "../data/sensor_train.csv"
+test_csv_file = "../data/sensor_test.csv"
 batch_size = 24
 
 # train
@@ -177,7 +177,7 @@ for fold, (xx, yy) in enumerate(kfold.split(x, y)):
 print("5kflod mean acc score:{}".format(np.mean(acc_scores)))
 print("5kflod mean combo score:{}".format(np.mean(combo_scores)))
 
-sub = pd.read_csv('data/提交结果示例.csv')
+sub = pd.read_csv('../data/提交结果示例.csv')
 sub.behavior_id = np.argmax(proba_t, axis=1)
 sub.to_csv('result/har_acc{}_combo{}.csv'.format(np.mean(acc_scores), np.mean(combo_scores)), index=False)
 pd.DataFrame(proba_t, columns=['pred_{}'.format(i) for i in range(19)]).to_csv(

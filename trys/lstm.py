@@ -4,7 +4,7 @@ from tensorflow.keras import Model
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau, CSVLogger
 from tensorflow.keras.layers import *
 
-from custom_layer import ASPP
+from trys.custom_layer import ASPP
 from load_data import *
 from load_inv_data import *
 from utils import *
@@ -145,7 +145,7 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
                                  mode='max',
                                  save_best_only=True)
 
-    csv_logger = CSVLogger('logs/log.csv', separator=',', append=True)
+    csv_logger = CSVLogger('../logs/log.csv', separator=',', append=True)
     model.fit([train_lstm[train_index],
                train_lstm_inv[train_index]],
               y_[train_index],

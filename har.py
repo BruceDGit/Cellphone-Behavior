@@ -18,7 +18,6 @@ from tensorflow.keras.layers import *
 from load_data import *
 from load_inv_data import *
 from utils import *
-from mixup_generator import MixupGenerator
 
 train_features, _, test_features = load_features_data(feature_id=2)
 

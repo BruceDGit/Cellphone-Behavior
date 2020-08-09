@@ -53,7 +53,7 @@ print('Ensemble-CV: {0}+{1}'.format(cv_mean, cv_std))
 gbdt = xgb.train(xgb_params, dtrain, best_nrounds)
 
 out_df = pd.DataFrame(gbdt.predict(dtest))
-sub = pd.read_csv('data/提交结果示例.csv')
+sub = pd.read_csv('../data/提交结果示例.csv')
 sub.behavior_id = np.argmax(out_df.values, axis=1)
 sub.to_csv('result/stacking.csv', index=False)
 

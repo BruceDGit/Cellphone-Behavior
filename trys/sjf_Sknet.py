@@ -11,8 +11,8 @@ from tensorflow.keras.regularizers import l2
 
 from load_data import *
 from load_inv_data import *
-from sjf_class_weight import DatasetLoader
-from sjf_extend import *
+from trys.sjf_class_weight import DatasetLoader
+from trys.sjf_extend import *
 from utils import *
 
 
@@ -115,8 +115,8 @@ def CNN(inputs, num_classes):
     return x
 
 
-train_csv_file = "data/sensor_train.csv"
-test_csv_file = "data/sensor_test.csv"
+train_csv_file = "../data/sensor_train.csv"
+test_csv_file = "../data/sensor_test.csv"
 batch_size = 24
 
 # train

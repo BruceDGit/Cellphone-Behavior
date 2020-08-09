@@ -15,7 +15,7 @@ from keras.models import Model
 from keras.layers import Input, Dense, LSTM, multiply, concatenate, Activation, Masking, Reshape
 from keras.layers import Conv1D, BatchNormalization, GlobalAveragePooling1D, Permute, Dropout
 
-from layer_utils import AttentionLSTM
+from trys.layer_utils import AttentionLSTM
 
 from load_data import load_lstm_data, load_features_data,load_y
 from load_inv_data import load_lstm_inv_data
@@ -26,7 +26,7 @@ train_lstm_inv, _, test_lstm_inv, _, _ = load_lstm_inv_data()
 
 train_features, _, test_features = load_features_data(feature_id=2)
 y = load_y()
-sub = pd.read_csv('data/提交结果示例.csv')
+sub = pd.read_csv('../data/提交结果示例.csv')
 
 
 def generate_model():
@@ -279,7 +279,7 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
                                  mode='max',
                                  save_best_only=True)
 
-    csv_logger = CSVLogger('logs/log.csv', separator=',', append=True)
+    csv_logger = CSVLogger('../logs/log.csv', separator=',', append=True)
     history = model.fit([train_lstm[train_index],
                          train_lstm_inv[train_index],
                          train_features[train_index]],

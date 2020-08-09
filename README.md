@@ -179,11 +179,11 @@ def LSTM_FCN():
 线下：
 lstm_acc 0.7962136532999378
 combo 0.8261682540488406
-- 线上0.754 代码对应为[lstm.py](lstm.py)
+- 线上0.754 代码对应为[lstm.py](trys/lstm.py)
 - 加入class weight引起过拟合
 
 3. [MLSTM-FCN](https://github.com/titu1994/MLSTM-FCN)
-代码：[mlstm_fcn.py](mlstm_fcn.py)
+代码：[mlstm_fcn.py](trys/mlstm_fcn.py)
 - 原始`generate_model`
 ```text
 accuracy_score 0.7764060356652949 acc_combo 0.8090012411000044

@@ -8,7 +8,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import StratifiedKFold
 from tensorflow.keras.layers import *
 
-from create_features import get_feat
+from trys.create_features import get_feat
 from utils import acc_combo
 
 train_features, y, test_features = get_feat()
@@ -59,7 +59,7 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_features, y)
                                  mode='max',
                                  save_best_only=True)
 
-    csv_logger = CSVLogger('logs/log.csv', separator=',', append=True)
+    csv_logger = CSVLogger('../logs/log.csv', separator=',', append=True)
     history = model.fit(train_features[train_index], y_[train_index],
                         epochs=500,
                         batch_size=64,
@@ -102,7 +102,7 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_features, y)
 print("5kflod mean acc score:{}".format(np.mean(acc_scores)))
 print("5kflod mean combo score:{}".format(np.mean(combo_scores)))
 
-sub = pd.read_csv('data/提交结果示例.csv')
+sub = pd.read_csv('../data/提交结果示例.csv')
 sub.behavior_id = np.argmax(proba_t, axis=1)
 sub.to_csv('result/dnn_acc{}_combo{}.csv'.format(np.mean(acc_scores), np.mean(combo_scores)), index=False)
 

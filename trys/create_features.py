@@ -75,8 +75,8 @@ def q90(x):
 def get_feat():
     if not os.path.exists('data/train_x.pkl'):
         print("get feat...")
-        train = pd.read_csv('data/sensor_train.csv')
-        test = pd.read_csv('data/sensor_test.csv')
+        train = pd.read_csv('../data/sensor_train.csv')
+        test = pd.read_csv('../data/sensor_test.csv')
         test['fragment_id'] += 10000
         data = pd.concat([train, test], axis=0).reset_index(drop=True)
 

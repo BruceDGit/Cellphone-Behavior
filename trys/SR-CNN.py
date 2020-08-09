@@ -20,7 +20,7 @@ from load_data import load_lstm_data
 from utils import acc_combo
 
 X, y, X_test, seq_len, fea_size = load_lstm_data()
-sub = pd.read_csv('./data/提交结果示例.csv')
+sub = pd.read_csv('../data/提交结果示例.csv')
 
 
 def SRCNN():
@@ -98,7 +98,7 @@ for fold, (xx, yy) in enumerate(kfold.split(X, y)):
                                  mode='max',
                                  save_best_only=True)
 
-    csv_logger = CSVLogger('./logs/log.csv', separator=',', append=True)
+    csv_logger = CSVLogger('../logs/log.csv', separator=',', append=True)
     model.fit(X[xx], y_[xx],
               epochs=500,
               batch_size=256,

@@ -147,7 +147,7 @@ for fold, (train_index, valid_index) in enumerate(kfold.split(train_lstm, y)):
                                  mode='max',
                                  save_best_only=True)
 
-    csv_logger = CSVLogger('logs/log.csv', separator=',', append=True)
+    csv_logger = CSVLogger('../logs/log.csv', separator=',', append=True)
     history = model.fit(train_lstm[train_index],
                         y_[train_index],
                         epochs=500,
